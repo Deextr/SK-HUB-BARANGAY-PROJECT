@@ -14,6 +14,10 @@
 </div>
 
 <div class="bg-white rounded shadow p-4">
+  <form method="GET" class="mb-4 flex gap-2">
+    <input type="text" name="q" value="{{ request('q') }}" placeholder="Search reason/status/date" class="border rounded px-3 py-2" />
+    <button class="bg-gray-700 text-white px-4 py-2 rounded">Search</button>
+  </form>
   <div class="overflow-x-auto">
     <table class="min-w-full">
       <thead>
@@ -41,13 +45,21 @@
         </tr>
         @empty
         <tr>
-          <td class="py-4 px-3 text-gray-500" colspan="5">No archived items.</td>
+          <td class="py-8 px-3 text-center text-gray-500" colspan="5">
+            @if(request('q'))
+              No archived items match your search. <a href="{{ route('admin.closure_periods.archives') }}" class="text-blue-600 underline">Clear search</a>
+            @else
+              No archived items.
+            @endif
+          </td>
         </tr>
         @endforelse
       </tbody>
     </table>
   </div>
-  <div class="mt-3">{{ $items->links() }}</div>
+  @if(($items ?? collect())->count() > 0)
+    <div class="mt-3">{{ $items->links() }}</div>
+  @endif
 </div>
 
 @endsection

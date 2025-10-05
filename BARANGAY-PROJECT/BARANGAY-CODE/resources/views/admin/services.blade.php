@@ -5,9 +5,9 @@
 @section('content')
 <div class="bg-white p-6 rounded-lg shadow-md">
     <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold">Services</h2>
+    
         <form method="GET" class="flex gap-2">
-            <input type="text" name="q" value="{{ request('q') }}" placeholder="Search name/description/capacity/active" class="border rounded px-3 py-2" />
+            <input type="text" name="q" value="{{ request('q') }}" placeholder="Search name/description/quantity/active" class="border rounded px-3 py-2" />
             <button class="bg-blue-600 text-white px-4 py-2 rounded">Search</button>
         </form>
     </div>
@@ -18,20 +18,27 @@
 
     <p class="text-sm text-gray-600 mb-3">Add services and set how many units are available.</p>
 
-    <form action="{{ route('admin.services.store') }}" method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <form action="{{ route('admin.services.store') }}" method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 bg-gray-50 p-4 rounded">
         @csrf
         <input type="text" name="name" placeholder="Service Name" class="border rounded px-3 py-2" required />
         <input type="number" name="capacity_units" placeholder="Quantity" min="1" class="border rounded px-3 py-2" required />
-        <input type="hidden" name="description" value="" />
-        <button class="bg-blue-600 text-white px-4 py-2 rounded">Add Service</button>
+        <div class="md:col-span-2">
+            <textarea name="description" placeholder="Description (optional)" rows="2" class="border rounded px-3 py-2 w-full"></textarea>
+        </div>
+        <label class="inline-flex items-center gap-2"><input type="checkbox" name="is_active" value="1" checked /> Active</label>
+        <div class="md:col-span-3 flex justify-end">
+            <button class="bg-blue-600 text-white px-4 py-2 rounded">Add Service</button>
+        </div>
     </form>
 
     <div class="overflow-x-auto">
+    @if(($services ?? collect())->count() > 0)
     <table class="min-w-full border rounded">
         <thead class="bg-gray-100">
             <tr>
                 <th class="text-left px-3 py-2 border">Name</th>
-                <th class="text-left px-3 py-2 border">Capacity</th>
+                <th class="text-left px-3 py-2 border">Description</th>
+                <th class="text-left px-3 py-2 border">Quantity</th>
                 <th class="text-left px-3 py-2 border">Active</th>
                 <th class="text-left px-3 py-2 border">Actions</th>
             </tr>
@@ -40,6 +47,7 @@
             @foreach($services as $service)
             <tr class="border">
                 <td class="px-3 py-2 border">{{ $service->name }}</td>
+                <td class="px-3 py-2 border">{{ $service->description ?: '—' }}</td>
                 <td class="px-3 py-2 border">{{ $service->capacity_units }}</td>
                 <td class="px-3 py-2 border">{{ $service->is_active ? 'Yes' : 'No' }}</td>
                 <td class="px-3 py-2 border">
@@ -70,7 +78,10 @@
                             <label class="block text-sm font-medium mb-1">Quantity</label>
                             <input type="number" name="capacity_units" value="{{ $service->capacity_units }}" min="1" class="border rounded px-3 py-2 w-full" required />
                         </div>
-                        <input type="hidden" name="description" value="{{ $service->description }}" />
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Description</label>
+                            <textarea name="description" rows="3" class="border rounded px-3 py-2 w-full" placeholder="Optional">{{ $service->description }}</textarea>
+                        </div>
                         <label class="inline-flex items-center">
                             <input type="checkbox" name="is_active" value="1" {{ $service->is_active ? 'checked' : '' }} class="mr-2" /> Active
                         </label>
@@ -84,9 +95,21 @@
             @endforeach
         </tbody>
     </table>
+    @else
+    <div class="text-center py-10 bg-gray-50 rounded-lg">
+        @if(request('q'))
+            <p class="text-gray-600 mb-3">No services match your search.</p>
+            <a href="{{ route('admin.services.index') }}" class="inline-block bg-gray-600 text-white px-4 py-2 rounded">Clear Filters</a>
+        @else
+            <p class="text-gray-600">No services found.</p>
+        @endif
+    </div>
+    @endif
     </div>
 
-    <div class="mt-4">{{ $services->links() }}</div>
+    @if(($services ?? collect())->count() > 0)
+        <div class="mt-4">{{ $services->links() }}</div>
+    @endif
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {

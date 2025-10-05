@@ -14,11 +14,17 @@
     @endif
 
     <div class="overflow-x-auto">
+    <form method="GET" class="mb-4 flex gap-2">
+        <input type="text" name="q" value="{{ request('q') }}" placeholder="Search name/description/quantity" class="border rounded px-3 py-2" />
+        <button class="bg-gray-700 text-white px-4 py-2 rounded">Search</button>
+    </form>
+    @if(($services ?? collect())->count() > 0)
     <table class="min-w-full border rounded">
         <thead class="bg-gray-100">
             <tr>
                 <th class="text-left px-3 py-2 border">Name</th>
-                <th class="text-left px-3 py-2 border">Capacity</th>
+                <th class="text-left px-3 py-2 border">Description</th>
+                <th class="text-left px-3 py-2 border">Quantity</th>
                 <th class="text-left px-3 py-2 border">Archived At</th>
                 <th class="text-left px-3 py-2 border">Actions</th>
             </tr>
@@ -27,6 +33,7 @@
             @forelse($services as $service)
             <tr class="border">
                 <td class="px-3 py-2 border">{{ $service->name }}</td>
+                <td class="px-3 py-2 border">{{ $service->description ?: '—' }}</td>
                 <td class="px-3 py-2 border">{{ $service->capacity_units }}</td>
                 <td class="px-3 py-2 border">{{ optional($service->deleted_at)->format('M j, Y g:i A') }}</td>
                 <td class="px-3 py-2 border">
@@ -43,9 +50,21 @@
             @endforelse
         </tbody>
     </table>
+    @else
+    <div class="text-center py-10 bg-gray-50 rounded-lg">
+        @if(request('q'))
+            <p class="text-gray-600 mb-3">No archived services match your search.</p>
+            <a href="{{ route('admin.services.archives') }}" class="inline-block bg-gray-600 text-white px-4 py-2 rounded">Clear Filters</a>
+        @else
+            <p class="text-gray-600">No archived services.</p>
+        @endif
+    </div>
+    @endif
     </div>
 
-    <div class="mt-4">{{ $services->links() }}</div>
+    @if(($services ?? collect())->count() > 0)
+        <div class="mt-4">{{ $services->links() }}</div>
+    @endif
 </div>
 @endsection
 

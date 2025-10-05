@@ -5,7 +5,7 @@
 @section('content')
 <div class="bg-white p-6 rounded-lg shadow-md">
     <form method="GET" class="mb-4 flex gap-2">
-        <input type="text" name="q" value="{{ request('q') }}" placeholder="Search ref/service" class="border rounded px-3 py-2" />
+        <input type="text" name="q" value="{{ request('q') }}" placeholder="Search ref/service/status/date/time" class="border rounded px-3 py-2" />
         <input type="date" name="date" value="{{ request('date') }}" class="border rounded px-3 py-2" />
         <select name="sort" class="border rounded px-3 py-2">
             <option value="reservation_date" {{ ($sort ?? request('sort'))=='reservation_date'?'selected':'' }}>Date</option>
@@ -74,12 +74,19 @@
     </table>
     <div class="mt-4">{{ $items->links() }}</div>
     @else
+    @if(request('q') || request('date'))
+    <div class="text-center py-8 bg-gray-50 rounded-lg">
+        <p class="text-gray-500 text-lg mb-4">No results found for your current filters.</p>
+        <a href="{{ route('resident.reservation') }}" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition duration-200 font-semibold inline-block">Clear Filters</a>
+    </div>
+    @else
     <div class="text-center py-8 bg-gray-50 rounded-lg">
         <p class="text-gray-500 text-lg mb-4">You don't have any reservations yet.</p>
         <a href="{{ route('resident.reservation.add') }}" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition duration-200 font-semibold inline-block">
             Make Your First Reservation
         </a>
     </div>
+    @endif
     @endif
 </div>
 @endsection

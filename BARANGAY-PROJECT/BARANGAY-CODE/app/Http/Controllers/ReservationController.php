@@ -42,8 +42,15 @@ class ReservationController extends Controller
             ->where('user_id', Auth::id())
             ->when($request->filled('q'), function ($q) use ($request) {
                 $term = $request->get('q');
-                $q->where('reference_no', 'like', "%$term%")
-                  ->orWhereHas('service', fn($sq) => $sq->where('name', 'like', "%$term%"));
+                // Group search conditions to ensure they are scoped under user_id
+                $q->where(function ($w) use ($term) {
+                    $w->where('reference_no', 'like', "%$term%")
+                      ->orWhere('status', 'like', "%$term%")
+                      ->orWhereDate('reservation_date', $term)
+                      ->orWhere('start_time', 'like', "%$term%")
+                      ->orWhere('end_time', 'like', "%$term%")
+                      ->orWhereHas('service', fn($sq) => $sq->where('name', 'like', "%$term%"));
+                });
             })
             ->when($request->filled('date'), fn($q) => $q->whereDate('reservation_date', $request->date))
             ->orderBy($sort, $direction)

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 05, 2025 at 01:51 PM
+-- Generation Time: Oct 05, 2025 at 05:27 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -72,7 +72,8 @@ CREATE TABLE `closure_periods` (
 INSERT INTO `closure_periods` (`id`, `start_date`, `end_date`, `reason`, `is_full_day`, `start_time`, `end_time`, `status`, `created_at`, `updated_at`, `deleted_at`) VALUES
 (4, '2025-10-26', '2025-10-27', 'Seminar', 1, NULL, NULL, 'active', '2025-10-05 08:12:52', '2025-10-05 08:12:57', NULL),
 (5, '2025-10-17', '2025-10-17', 'Outing', 1, NULL, NULL, 'active', '2025-10-05 09:50:57', '2025-10-05 09:50:57', NULL),
-(6, '2025-10-30', '2025-10-30', NULL, 1, NULL, NULL, 'pending', '2025-10-05 11:30:24', '2025-10-05 11:49:13', '2025-10-05 11:49:13');
+(6, '2025-10-30', '2025-10-30', 'InOUT', 1, NULL, NULL, 'pending', '2025-10-05 11:30:24', '2025-10-05 15:07:40', NULL),
+(7, '2025-10-31', '2025-11-01', 'Holiday', 1, NULL, NULL, 'pending', '2025-10-05 14:59:04', '2025-10-05 15:04:02', '2025-10-05 15:04:02');
 
 -- --------------------------------------------------------
 
@@ -232,10 +233,10 @@ CREATE TABLE `services` (
 --
 
 INSERT INTO `services` (`id`, `name`, `description`, `capacity_units`, `is_active`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 'PC', NULL, 8, 1, '2025-09-30 04:36:58', '2025-09-30 04:43:21', NULL),
+(1, 'PC', 'High End PC\'s', 8, 1, '2025-09-30 04:36:58', '2025-10-05 14:49:40', NULL),
 (2, 'Study Table', NULL, 6, 1, '2025-09-30 04:37:26', '2025-09-30 04:37:26', NULL),
-(3, 'Cubicle', NULL, 7, 1, '2025-09-30 07:08:12', '2025-09-30 07:08:12', NULL),
-(4, 'TV', NULL, 2, 1, '2025-09-30 16:23:46', '2025-09-30 16:23:46', NULL),
+(3, 'Cubicle', 'This is cubicle', 7, 1, '2025-09-30 07:08:12', '2025-10-05 14:49:29', NULL),
+(4, 'TV', 'Sony', 2, 1, '2025-09-30 16:23:46', '2025-10-05 14:50:05', NULL),
 (5, 'Gaming Chair', NULL, 3, 0, '2025-10-01 10:08:22', '2025-10-01 10:30:29', '2025-10-01 10:30:29');
 
 -- --------------------------------------------------------
@@ -258,7 +259,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('ViVjmO5WWRNy4rhXuj4DeJiWiijIUE50gIn7oZS4', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiMDFPOGVXNXRYdDRHcTBXWGEzZ3pFaWNMenNZUWNDZEp6VlN6WmdXcSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9sb2dpbiI7fX0=', 1759665001);
+('AGu17mn9xX9iTUxnIpavIbrrPCg7Xym2XcHqSLdF', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiWnkxUFpYdXQ0S3FWMVpWV20zVzFVWEFPWHZlUktMZDAyaTV5U1R3NyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9sb2dpbiI7fX0=', 1759678007);
 
 -- --------------------------------------------------------
 
@@ -286,7 +287,8 @@ INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `is
 (1, 'emerson', 'emerson@gmail.com', NULL, '$2y$12$NFVL/GfqizBIFLJNPB7Ml.RfpTYKXsCdfkgkEo2nZqfGlXGaA796W', 1, NULL, '2025-09-29 04:29:07', '2025-09-29 04:29:07'),
 (2, 'resident', 'resident@gmail.com', NULL, '$2y$12$sS/sek5Ly0cLTMTJHQQ5XOXknNyaWuLGVDjFlhK97gW/IJ2rebuxe', 0, NULL, '2025-09-29 05:00:17', '2025-09-29 05:00:17'),
 (3, 'bayona', 'bayona@gmail.com', NULL, '$2y$12$gBd52oIr88UCMpc4WPv9R.qZ6OTxLkcLpZimR0S8JluQuWmXEGXfW', 0, NULL, '2025-09-29 07:17:54', '2025-09-29 07:17:54'),
-(4, 'dexter', 'dexter@gmail.com', NULL, '$2y$12$uiEzF0OlD16wXt9wvw85C.AP.hwBGJSXGjPDxiSvINMmg6j5ROX8.', 0, NULL, '2025-09-30 04:18:42', '2025-09-30 04:18:42');
+(4, 'dexter', 'dexter@gmail.com', NULL, '$2y$12$uiEzF0OlD16wXt9wvw85C.AP.hwBGJSXGjPDxiSvINMmg6j5ROX8.', 0, NULL, '2025-09-30 04:18:42', '2025-09-30 04:18:42'),
+(5, 'park', 'park@gmail.com', NULL, '$2y$12$2qLUrIaBdfUWeFvMP0JZu.WOxxjzrDA9Zly285mvvavzScvErgxf2', 0, NULL, '2025-10-05 13:06:48', '2025-10-05 13:06:48');
 
 --
 -- Indexes for dumped tables
@@ -381,7 +383,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `closure_periods`
 --
 ALTER TABLE `closure_periods`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `failed_jobs`
@@ -417,7 +419,7 @@ ALTER TABLE `services`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- Constraints for dumped tables

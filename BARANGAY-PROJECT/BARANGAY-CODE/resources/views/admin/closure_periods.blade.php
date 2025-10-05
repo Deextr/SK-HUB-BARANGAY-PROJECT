@@ -19,20 +19,30 @@
 @endif
 
 <div class="bg-white rounded shadow p-4 mb-6">
-    <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
+    <div class="flex flex-col gap-3">
+        <form method="GET" class="flex gap-2 items-center flex-wrap">
+            <input type="text" name="q" value="{{ request('q') }}" placeholder="Search reason/status/date" class="border rounded px-3 py-2" />
+            <select name="sort" class="border rounded px-3 py-2">
+                <option value="start_date" {{ ($sort ?? request('sort'))=='start_date'?'selected':'' }}>Start Date</option>
+                <option value="end_date" {{ ($sort ?? request('sort'))=='end_date'?'selected':'' }}>End Date</option>
+                <option value="status" {{ ($sort ?? request('sort'))=='status'?'selected':'' }}>Status</option>
+                <option value="reason" {{ ($sort ?? request('sort'))=='reason'?'selected':'' }}>Reason</option>
+                <option value="created_at" {{ ($sort ?? request('sort'))=='created_at'?'selected':'' }}>Created</option>
+            </select>
+            <select name="direction" class="border rounded px-3 py-2">
+                <option value="asc" {{ ($direction ?? request('direction'))=='asc'?'selected':'' }}>Asc</option>
+                <option value="desc" {{ ($direction ?? request('direction'))=='desc'?'selected':'' }}>Desc</option>
+            </select>
+            <button class="bg-gray-700 text-white px-4 py-2 rounded">Apply</button>
+        </form>
+        <div>
             <button id="btnOpenCreate" class="bg-blue-600 text-white px-4 py-2 rounded">+ Closure Period</button>
-            <form method="GET" class="flex gap-2">
-                <input type="text" name="q" value="{{ request('q') }}" placeholder="Search reason/status/date" class="border rounded px-3 py-2" />
-                <button class="bg-gray-700 text-white px-4 py-2 rounded">Search</button>
-            </form>
         </div>
-        <a href="{{ route('admin.archives') }}" class="bg-gray-600 text-white px-4 py-2 rounded">Archives</a>
     </div>
 </div>
 
 <div class="bg-white rounded shadow p-4">
-    <h2 class="text-lg font-semibold mb-3">Existing Closure Periods</h2>
+    
     <div class="overflow-x-auto">
     <table class="min-w-full">
         <thead>
@@ -64,7 +74,7 @@
                     @endif
                 </td>
                 <td class="py-2 px-3 flex gap-2">
-                    <button class="bg-gray-700 text-white px-3 py-1 rounded btnEdit"
+                    <button class="bg-gray-700 text-white px-3 py-1 rounded btnEdit {{ $p->status==='active' ? 'opacity-50 cursor-not-allowed' : '' }}"
                         data-id="{{ $p->id }}"
                         data-start_date="{{ $p->start_date->toDateString() }}"
                         data-end_date="{{ $p->end_date->toDateString() }}"
@@ -73,17 +83,23 @@
                         data-end_time="{{ $p->end_time }}"
                         data-reason="{{ $p->reason }}"
                         data-status="{{ $p->status }}"
-                    >Edit</button>
+                    {{ $p->status==='active' ? 'disabled' : '' }}>Edit</button>
                     <form method="POST" action="{{ route('admin.closure_periods.destroy', $p) }}" onsubmit="return confirm('Archive this period?')">
                         @csrf
                         @method('DELETE')
-                        <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded">Archive</button>
+                        <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded" {{ $p->status==='active' ? 'disabled class=opacity-50 cursor-not-allowed' : '' }}>Archive</button>
                     </form>
                 </td>
             </tr>
             @empty
             <tr>
-                <td class="py-4 px-3 text-gray-500" colspan="4">No closure periods yet.</td>
+                <td class="py-8 px-3 text-center text-gray-500" colspan="5">
+                    @if(request('q'))
+                        No results found for your search. <a href="{{ route('admin.closure_periods.index') }}" class="text-blue-600 underline">Clear search</a>
+                    @else
+                        No closure periods yet.
+                    @endif
+                </td>
             </tr>
             @endforelse
         </tbody>

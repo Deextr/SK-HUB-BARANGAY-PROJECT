@@ -9,6 +9,10 @@ class ClosurePeriodController extends Controller
 {
     public function index(Request $request)
     {
+        $allowedSorts = ['start_date', 'end_date', 'status', 'reason', 'created_at'];
+        $sort = in_array($request->get('sort'), $allowedSorts) ? $request->get('sort') : 'start_date';
+        $direction = $request->get('direction') === 'asc' ? 'asc' : 'desc';
+
         $items = ClosurePeriod::when($request->filled('q'), function($q) use ($request) {
                 $term = $request->get('q');
                 $q->where('reason', 'like', "%$term%")
@@ -16,10 +20,10 @@ class ClosurePeriodController extends Controller
                   ->orWhereDate('start_date', $term)
                   ->orWhereDate('end_date', $term);
             })
-            ->orderByDesc('start_date')
+            ->orderBy($sort, $direction)
             ->paginate(6)
             ->withQueryString();
-        return view('admin.closure_periods', compact('items'));
+        return view('admin.closure_periods', compact('items', 'sort', 'direction'));
     }
 
     public function store(Request $request)
@@ -69,13 +73,9 @@ class ClosurePeriodController extends Controller
             'status' => ['nullable', 'in:pending,active'],
         ]);
 
-        // If currently active, only allow status changes
+        // If currently active, disallow any edits (including status changes)
         if ($closurePeriod->status === 'active') {
-            $newStatus = $validated['status'] ?? $closurePeriod->status;
-            if ($newStatus !== $closurePeriod->status) {
-                $closurePeriod->update(['status' => $newStatus]);
-            }
-            return redirect()->route('admin.closure_periods.index')->with('status', 'Closure period updated.');
+            return redirect()->route('admin.closure_periods.index')->with('status', 'Active closure periods cannot be edited.');
         }
 
         // Pending: allow full edits
