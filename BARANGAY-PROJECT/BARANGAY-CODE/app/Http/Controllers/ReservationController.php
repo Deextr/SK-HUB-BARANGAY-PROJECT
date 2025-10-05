@@ -8,9 +8,16 @@ use App\Models\ClosurePeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ReservationController extends Controller
 {
+    public function create()
+    {
+        $userId = Auth::id();
+        [$onCooldown, $cooldownUntil] = $this->cooldownState($userId);
+        return view('resident.make_reservation_wizard', compact('onCooldown', 'cooldownUntil'));
+    }
     public function residentIndex(Request $request)
     {
         $now = now();
@@ -49,8 +56,8 @@ class ReservationController extends Controller
 
     public function index(Request $request)
     {
-        $sort = $request->get('sort', 'reservation_date');
-        $direction = $request->get('direction', 'asc');
+        $sort = $request->get('sort', 'id');
+        $direction = $request->get('direction', 'desc');
 
         $sortable = [
             'id' => 'reservations.id',
@@ -188,11 +195,48 @@ class ReservationController extends Controller
             $current->addDay();
         }
 
-        return response()->json(['dates' => $dates]);
+        // Include admin-closed dates (closure periods)
+        $closed = ClosurePeriod::active()
+            ->whereDate('end_date', '>=', $start->toDateString())
+            ->whereDate('start_date', '<=', $end->toDateString())
+            ->get(['start_date','end_date']);
+
+        foreach ($closed as $p) {
+            $d = \Carbon\Carbon::parse($p->start_date)->max($start->copy());
+            $dEnd = \Carbon\Carbon::parse($p->end_date)->min($end->copy());
+            while ($d->lte($dEnd)) {
+                $day = $d->toDateString();
+                if (!in_array($day, $dates, true)) {
+                    $dates[] = $day;
+                }
+                $d->addDay();
+            }
+        }
+
+        sort($dates);
+        return response()->json(['dates' => array_values(array_unique($dates))]);
+    }
+
+    public function hasReservationForDate(Request $request)
+    {
+        $date = $request->query('date');
+        if (!$date) {
+            return response()->json(['blocked' => false]);
+        }
+        $exists = Reservation::where('user_id', Auth::id())
+            ->whereDate('reservation_date', $date)
+            ->whereIn('status', ['pending','confirmed'])
+            ->exists();
+        return response()->json([
+            'blocked' => $exists,
+            'message' => $exists ? 'You already have a reservation for this date.' : null,
+        ]);
     }
 
     public function store(Request $request)
     {
+        // Enforce per-day cooldown (resets at midnight): only one booking can be created per calendar day
+        $this->assertCooldown(Auth::id());
         $validated = $request->validate([
             'service_id' => ['required', Rule::exists('services', 'id')->where('is_active', true)],
             'reservation_date' => ['required', 'date', 'after_or_equal:today'],
@@ -208,6 +252,7 @@ class ReservationController extends Controller
             abort(422, 'End time must be after start time.');
         }
         $this->validateBusinessHours($startTime, $endTime);
+        $this->assertSameDayCutoff($validated['reservation_date']);
         $this->assertNotClosed($validated['reservation_date'], $startTime, $endTime);
         $this->assertOncePerDay(Auth::id(), $validated['reservation_date']);
         $this->assertCapacity($validated['service_id'], $validated['reservation_date'], $startTime, $endTime, 1);
@@ -255,6 +300,7 @@ class ReservationController extends Controller
             abort(422, 'End time must be after start time.');
         }
         $this->validateBusinessHours($startTime, $endTime);
+        $this->assertSameDayCutoff($validated['reservation_date']);
         $this->assertNotClosed($validated['reservation_date'], $startTime, $endTime);
         $this->assertCapacity($validated['service_id'], $validated['reservation_date'], $startTime, $endTime, 1, $reservation->id);
 
@@ -293,6 +339,40 @@ class ReservationController extends Controller
         return view('resident.booking_history', compact('reservations'));
     }
 
+    public function setActualTimes(Request $request, $id)
+    {
+        $reservation = Reservation::with('user','service')->findOrFail($id);
+        if (in_array($reservation->status, ['cancelled','completed'])) {
+            abort(422, 'Cannot edit times for this reservation.');
+        }
+        $validated = $request->validate([
+            'actual_time_in' => ['nullable','date_format:H:i'],
+            'actual_time_out' => ['nullable','date_format:H:i'],
+            'action' => ['required','in:save,submit'],
+        ]);
+
+        $updates = [];
+        if (array_key_exists('actual_time_in', $validated)) {
+            $updates['actual_time_in'] = $validated['actual_time_in'];
+        }
+        if (array_key_exists('actual_time_out', $validated)) {
+            $updates['actual_time_out'] = $validated['actual_time_out'];
+        }
+
+        if ($validated['action'] === 'submit') {
+            if (empty($updates['actual_time_out'])) {
+                return back()->withErrors(['actual_time_out' => 'Time Out is required to submit.'])->withInput();
+            }
+            $updates['status'] = 'completed';
+        }
+
+        if (!empty($updates)) {
+            $reservation->update($updates);
+        }
+
+        return back()->with('status', $validated['action'] === 'submit' ? 'Reservation completed' : 'Draft saved');
+    }
+
     private function validateBusinessHours(string $start, string $end): void
     {
         if ($start < '08:00' || $end > '17:00') {
@@ -310,6 +390,45 @@ class ReservationController extends Controller
             abort(422, 'You already have a reservation for this date.');
         }
     }
+
+    private function assertCooldown(int $userId): void
+    {
+        // Cooldown resets at 12:00 AM local time. If the user already created a booking today, block another regardless of chosen date.
+        $existsToday = Reservation::where('user_id', $userId)
+            ->whereDate('created_at', now()->toDateString())
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->exists();
+        if ($existsToday) {
+            throw ValidationException::withMessages([
+                'reservation_date' => 'You can only make one reservation per day. Please try again after 12:00 AM.'
+            ]);
+        }
+    }
+
+    private function cooldownState(int $userId): array
+    {
+        $existsToday = Reservation::where('user_id', $userId)
+            ->whereDate('created_at', now()->toDateString())
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->exists();
+        if (!$existsToday) {
+            return [false, null];
+        }
+        $until = now()->startOfDay()->addDay(); // next midnight
+        return [true, $until];
+    }
+
+    private function assertSameDayCutoff(string $reservationDate): void
+    {
+        // If booking for today, only allow until 15:00 (3:00 PM)
+        if ($reservationDate === now()->toDateString()) {
+            if (now()->format('H:i') >= '15:00') {
+                abort(422, 'Same-day reservations are allowed only until 3:00 PM.');
+            }
+        }
+    }
+
+    // Removed 24-hour cooldown logic per requirements
 
     private function assertCapacity(int $serviceId, string $date, string $start, string $end, int $requestedUnits, ?int $ignoreReservationId = null): void
     {

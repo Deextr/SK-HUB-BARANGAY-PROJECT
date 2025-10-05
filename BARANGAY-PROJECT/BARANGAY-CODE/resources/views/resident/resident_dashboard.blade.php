@@ -108,9 +108,7 @@
                 <a href="{{ route('resident.reservation') }}" class="w-full inline-flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg transition">
                     <i class="fas fa-list mr-2"></i>My Reservations
                 </a>
-                <a href="{{ route('resident.booking.history') }}" class="w-full inline-flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg transition">
-                    <i class="fas fa-history mr-2"></i>View History
-                </a>
+                
             </div>
         </div>
     </div>

@@ -49,8 +49,8 @@
                 Closure Periods
             </a>
 
-            <a href="{{ route('admin.services.archives') }}" 
-               class="flex items-center py-3 px-6 transition duration-200 {{ request()->routeIs('admin.services.archives') ? 'bg-yellow-400' : '' }}">
+            <a href="{{ route('admin.archives', ['tab' => 'services']) }}" 
+               class="flex items-center py-3 px-6 transition duration-200 {{ request()->routeIs('admin.archives') ? 'bg-yellow-400' : '' }}">
                 <i class="fas fa-archive w-6 mr-3"></i>
                 Archives
             </a>

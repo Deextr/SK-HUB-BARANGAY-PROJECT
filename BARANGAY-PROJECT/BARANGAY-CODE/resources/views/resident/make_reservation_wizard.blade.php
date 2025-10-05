@@ -9,6 +9,25 @@
         <p class="text-gray-600 mt-2">Follow the steps to complete your reservation.</p>
     </div>
 
+    @if ($errors->any())
+        <div class="mb-4 p-3 rounded border border-red-200 bg-red-50 text-red-700">
+            <strong>We couldn't submit your reservation:</strong>
+            <ul class="list-disc ml-5 mt-2">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    @isset($onCooldown)
+        @if ($onCooldown)
+            <div class="mb-4 p-3 rounded border border-yellow-300 bg-yellow-50 text-yellow-800">
+                <strong>One reservation every 24 hours.</strong>
+                <div class="text-sm mt-1">You can make a new reservation after <span class="font-semibold">{{ optional($cooldownUntil)->timezone(config('app.timezone'))->format('M d, Y g:i A') }}</span>.</div>
+            </div>
+        @endif
+    @endisset
     <form id="reservationForm" action="{{ route('resident.reservation.store') }}" method="POST" class="space-y-6">
         @csrf
 
@@ -36,7 +55,7 @@
         <div id="step1" class="space-y-4">
             <div>
                 <label for="reservation_date" class="block text-sm font-medium text-gray-700 mb-2">Reservation Date</label>
-                <input type="date" id="reservation_date" name="reservation_date" min="{{ date('Y-m-d') }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                <input type="date" id="reservation_date" name="reservation_date" min="{{ date('Y-m-d') }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent" @isset($onCooldown) @if($onCooldown) disabled @endif @endisset>
                 <p class="text-xs text-gray-500 mt-1">Fully booked or closed dates will show no available services.</p>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -125,8 +144,8 @@
             <a href="{{ route('resident.dashboard') }}" class="bg-gray-300 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-400 transition duration-200 font-semibold">Cancel</a>
             <div class="ml-auto flex gap-2">
                 <button type="button" id="btnBack" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition duration-200 font-semibold hidden">Back</button>
-                <button type="button" id="btnNext" class="bg-yellow-500 text-white px-6 py-2 rounded-lg hover:bg-yellow-600 transition duration-200 font-semibold">Next</button>
-                <button type="submit" id="btnSubmit" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition duration-200 font-semibold hidden">Confirm & Submit</button>
+                <button type="button" id="btnNext" class="bg-yellow-500 text-white px-6 py-2 rounded-lg hover:bg-yellow-600 transition duration-200 font-semibold" @isset($onCooldown) @if($onCooldown) disabled @endif @endisset>Next</button>
+                <button type="submit" id="btnSubmit" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition duration-200 font-semibold hidden" @isset($onCooldown) @if($onCooldown) disabled @endif @endisset>Confirm & Submit</button>
             </div>
         </div>
     </form>
@@ -181,6 +200,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function validateStep(step) {
+        const isOnCooldown = {{ isset($onCooldown) && $onCooldown ? 'true' : 'false' }};
+        if (isOnCooldown) {
+            alert('You can only make one reservation every 24 hours. Please try again later or cancel your existing reservation.');
+            return false;
+        }
+        // Same-day cutoff: do not allow proceeding past 3:00 PM when booking for today
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
+        const hhmm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        if (dateEl.value === todayStr && hhmm >= '15:00') {
+            alert('Same-day reservations are allowed only until 3:00 PM.');
+            return false;
+        }
         if (step === 1) {
             if (!dateEl.value) { alert('Please select a reservation date.'); return false; }
             if (startTimeSelect.value && endTimeSelect.value && endTimeSelect.value <= startTimeSelect.value) {
@@ -231,6 +263,24 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         try {
+            // Same-day cutoff at 15:00
+            const now = new Date();
+            if (dateEl.value === today) {
+                const hhmm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+                if (hhmm >= '15:00') {
+                    alert('Same-day reservations are allowed only until 3:00 PM.');
+                    serviceSelect.innerHTML = `<option value="">Same-day booking closed after 3:00 PM</option>`;
+                    return;
+                }
+            }
+            // Block if user already has a reservation for selected date
+            const r = await fetch(`{{ route('resident.reservation.has_for_date') }}?date=${encodeURIComponent(dateEl.value)}`, { headers: { 'Accept': 'application/json' }});
+            const rb = await r.json();
+            if (rb.blocked) {
+                alert(rb.message || 'You already have a reservation for this date.');
+                serviceSelect.innerHTML = `<option value="">Date not allowed</option>`;
+                return;
+            }
             const params = new URLSearchParams({ reservation_date: dateEl.value });
             const res = await fetch(`{{ route('resident.reservation.available') }}?` + params.toString(), { headers: { 'Accept': 'application/json' }});
             const data = await res.json();
@@ -241,10 +291,32 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Fully booked date guard + closed dates guard
+    // Fully booked date guard + closed dates guard with visual hint
     async function refreshDisabledDates() {
-        // No UI coloring; backend will return no services on closed/fully booked
-        return;
+        try {
+            const params = new URLSearchParams({ start: today });
+            const res = await fetch(`{{ route('resident.reservation.fully_booked') }}?` + params.toString(), { headers: { 'Accept': 'application/json' }});
+            const data = await res.json();
+            const blocked = new Set(data.dates || []);
+            dateEl.addEventListener('input', function() {
+                if (blocked.has(this.value)) {
+                    alert('Selected date is unavailable (closed or fully booked). Please choose another date.');
+                    this.value = '';
+                }
+            });
+            const hintId = 'blockedDatesHint';
+            let hint = document.getElementById(hintId);
+            if (!hint) {
+                hint = document.createElement('div');
+                hint.id = hintId;
+                hint.className = 'text-xs text-gray-500 mt-1';
+                dateEl.parentElement.appendChild(hint);
+            }
+            if (blocked.size > 0) {
+                const examples = Array.from(blocked).slice(0, 5).join(', ');
+                hint.innerHTML = `<span class="line-through text-gray-400">Blocked dates</span>: <span class="text-gray-600">${examples}${blocked.size>5?'...':''}</span>`;
+            }
+        } catch (e) { /* ignore */ }
     }
 
     // Time validation UI

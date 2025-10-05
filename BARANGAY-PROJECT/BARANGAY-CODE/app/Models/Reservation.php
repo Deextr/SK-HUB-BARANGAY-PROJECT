@@ -16,6 +16,8 @@ class Reservation extends Model
         'reservation_date',
         'start_time',
         'end_time',
+        'actual_time_in',
+        'actual_time_out',
         'units_reserved',
         'status',
         'preferences',

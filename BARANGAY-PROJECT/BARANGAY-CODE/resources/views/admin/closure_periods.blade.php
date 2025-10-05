@@ -27,6 +27,7 @@
                 <button class="bg-gray-700 text-white px-4 py-2 rounded">Search</button>
             </form>
         </div>
+        <a href="{{ route('admin.archives') }}" class="bg-gray-600 text-white px-4 py-2 rounded">Archives</a>
     </div>
 </div>
 
@@ -73,10 +74,10 @@
                         data-reason="{{ $p->reason }}"
                         data-status="{{ $p->status }}"
                     >Edit</button>
-                    <form method="POST" action="{{ route('admin.closure_periods.destroy', $p) }}" onsubmit="return confirm('Delete this period?')">
+                    <form method="POST" action="{{ route('admin.closure_periods.destroy', $p) }}" onsubmit="return confirm('Archive this period?')">
                         @csrf
                         @method('DELETE')
-                        <button class="bg-red-600 text-white px-3 py-1 rounded">Delete</button>
+                        <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded">Archive</button>
                     </form>
                 </td>
             </tr>

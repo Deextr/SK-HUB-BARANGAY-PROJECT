@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 01, 2025 at 04:39 PM
+-- Generation Time: Oct 05, 2025 at 01:51 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -61,15 +61,18 @@ CREATE TABLE `closure_periods` (
   `end_time` time DEFAULT NULL,
   `status` varchar(255) NOT NULL DEFAULT 'pending',
   `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `closure_periods`
 --
 
-INSERT INTO `closure_periods` (`id`, `start_date`, `end_date`, `reason`, `is_full_day`, `start_time`, `end_time`, `status`, `created_at`, `updated_at`) VALUES
-(3, '2025-10-22', '2025-10-23', 'Outing', 1, NULL, NULL, 'active', '2025-10-01 12:43:50', '2025-10-01 12:46:12');
+INSERT INTO `closure_periods` (`id`, `start_date`, `end_date`, `reason`, `is_full_day`, `start_time`, `end_time`, `status`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(4, '2025-10-26', '2025-10-27', 'Seminar', 1, NULL, NULL, 'active', '2025-10-05 08:12:52', '2025-10-05 08:12:57', NULL),
+(5, '2025-10-17', '2025-10-17', 'Outing', 1, NULL, NULL, 'active', '2025-10-05 09:50:57', '2025-10-05 09:50:57', NULL),
+(6, '2025-10-30', '2025-10-30', NULL, 1, NULL, NULL, 'pending', '2025-10-05 11:30:24', '2025-10-05 11:49:13', '2025-10-05 11:49:13');
 
 -- --------------------------------------------------------
 
@@ -147,7 +150,9 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (6, '2025_09_30_000000_alter_reservations_add_fields', 3),
 (7, '2025_10_01_000001_add_soft_deletes_to_services_table', 4),
 (8, '2025_10_01_000100_create_closure_periods_table', 5),
-(9, '2025_10_01_000101_add_status_to_closure_periods', 6);
+(9, '2025_10_01_000101_add_status_to_closure_periods', 6),
+(10, '2025_10_05_000300_add_actual_times_to_reservations', 7),
+(11, '2025_10_05_000400_add_soft_deletes_to_closure_periods', 8);
 
 -- --------------------------------------------------------
 
@@ -175,6 +180,8 @@ CREATE TABLE `reservations` (
   `reservation_date` date NOT NULL,
   `start_time` time DEFAULT NULL,
   `end_time` time DEFAULT NULL,
+  `actual_time_in` time DEFAULT NULL,
+  `actual_time_out` time DEFAULT NULL,
   `units_reserved` int(10) UNSIGNED NOT NULL DEFAULT 1,
   `status` enum('pending','confirmed','cancelled','completed') NOT NULL DEFAULT 'pending',
   `preferences` text DEFAULT NULL,
@@ -186,14 +193,22 @@ CREATE TABLE `reservations` (
 -- Dumping data for table `reservations`
 --
 
-INSERT INTO `reservations` (`id`, `user_id`, `service_id`, `reference_no`, `reservation_date`, `start_time`, `end_time`, `units_reserved`, `status`, `preferences`, `created_at`, `updated_at`) VALUES
-(1, 4, 1, 'RSV-20250930-551AF2', '2025-10-01', '08:00:00', '17:00:00', 1, 'completed', NULL, '2025-09-30 07:16:52', '2025-10-01 09:48:36'),
-(2, 4, 1, 'RSV-20251001-E0CD6E', '2025-10-08', '08:00:00', '17:00:00', 1, 'cancelled', NULL, '2025-09-30 16:20:11', '2025-09-30 16:21:40'),
-(3, 4, 4, 'RSV-20251001-A4717A', '2025-10-03', '08:00:00', '17:00:00', 1, 'cancelled', NULL, '2025-09-30 16:25:08', '2025-09-30 16:25:57'),
-(4, 4, 1, 'RSV-20251001-213882', '2025-10-03', '08:00:00', '17:00:00', 1, 'cancelled', NULL, '2025-10-01 09:21:29', '2025-10-01 09:22:59'),
-(5, 4, 1, 'RSV-20251001-64DA42', '2025-10-15', '08:00:00', '17:00:00', 1, 'cancelled', NULL, '2025-10-01 09:26:30', '2025-10-01 09:26:42'),
-(11, 4, 2, 'RSV-20251001-4EA046', '2025-10-25', '14:50:00', '17:00:00', 1, 'cancelled', NULL, '2025-10-01 13:29:53', '2025-10-01 13:30:14'),
-(12, 4, 4, 'RSV-20251001-A856D0', '2025-10-20', '08:00:00', '17:00:00', 1, 'cancelled', 'Special Assistant', '2025-10-01 14:09:39', '2025-10-01 14:17:42');
+INSERT INTO `reservations` (`id`, `user_id`, `service_id`, `reference_no`, `reservation_date`, `start_time`, `end_time`, `actual_time_in`, `actual_time_out`, `units_reserved`, `status`, `preferences`, `created_at`, `updated_at`) VALUES
+(1, 4, 1, 'RSV-20250930-551AF2', '2025-10-01', '08:00:00', '17:00:00', NULL, NULL, 1, 'completed', NULL, '2025-09-30 07:16:52', '2025-10-01 09:48:36'),
+(2, 4, 1, 'RSV-20251001-E0CD6E', '2025-10-08', '08:00:00', '17:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-09-30 16:20:11', '2025-09-30 16:21:40'),
+(3, 4, 4, 'RSV-20251001-A4717A', '2025-10-03', '08:00:00', '17:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-09-30 16:25:08', '2025-09-30 16:25:57'),
+(4, 4, 1, 'RSV-20251001-213882', '2025-10-03', '08:00:00', '17:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-10-01 09:21:29', '2025-10-01 09:22:59'),
+(5, 4, 1, 'RSV-20251001-64DA42', '2025-10-15', '08:00:00', '17:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-10-01 09:26:30', '2025-10-01 09:26:42'),
+(11, 4, 2, 'RSV-20251001-4EA046', '2025-10-25', '14:50:00', '17:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-10-01 13:29:53', '2025-10-01 13:30:14'),
+(12, 4, 4, 'RSV-20251001-A856D0', '2025-10-20', '08:00:00', '17:00:00', NULL, NULL, 1, 'cancelled', 'Special Assistant', '2025-10-01 14:09:39', '2025-10-01 14:17:42'),
+(13, 4, 1, 'RSV-20251005-8642D7', '2025-10-28', '08:00:00', '17:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-10-05 07:35:26', '2025-10-05 07:43:58'),
+(14, 4, 1, 'RSV-20251005-2CBA4A', '2025-10-24', '08:00:00', '17:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-10-05 07:44:56', '2025-10-05 07:57:22'),
+(15, 4, 1, 'RSV-20251005-0AFCE9', '2025-10-25', '08:00:00', '17:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-10-05 07:57:39', '2025-10-05 07:58:30'),
+(16, 4, 1, 'RSV-20251005-EEBD6F', '2025-10-26', '08:00:00', '17:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-10-05 07:58:17', '2025-10-05 08:03:11'),
+(17, 4, 1, 'RSV-20251005-92CA40', '2025-10-29', '08:00:00', '17:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-10-05 08:40:25', '2025-10-05 08:42:52'),
+(18, 4, 1, 'RSV-20251005-37735D', '2025-10-22', '08:00:00', '17:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-10-05 08:49:50', '2025-10-05 08:53:58'),
+(19, 4, 1, 'RSV-20251005-5B74E1', '2025-10-06', '08:00:00', '17:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-10-05 09:12:33', '2025-10-05 09:13:02'),
+(20, 4, 3, 'RSV-20251005-5AF675', '2025-10-18', '08:00:00', '17:00:00', '09:06:00', '14:07:00', 1, 'completed', NULL, '2025-10-05 10:59:10', '2025-10-05 11:08:11');
 
 -- --------------------------------------------------------
 
@@ -243,7 +258,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('BQLVFIvYfOzgl1GRO461IY4iDNAyDlClQJFhO25c', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoia2FzckpBZlBVRHpFVXVhSmxCS0JsMXZnUk9KamV1NFJpTjVETlhhWSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9sb2dpbiI7fX0=', 1759329248);
+('ViVjmO5WWRNy4rhXuj4DeJiWiijIUE50gIn7oZS4', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiMDFPOGVXNXRYdDRHcTBXWGEzZ3pFaWNMenNZUWNDZEp6VlN6WmdXcSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9sb2dpbiI7fX0=', 1759665001);
 
 -- --------------------------------------------------------
 
@@ -366,7 +381,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `closure_periods`
 --
 ALTER TABLE `closure_periods`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `failed_jobs`
@@ -384,13 +399,13 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `reservations`
 --
 ALTER TABLE `reservations`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `services`

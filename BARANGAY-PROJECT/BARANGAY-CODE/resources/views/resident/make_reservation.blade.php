@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     dateInput.addEventListener('change', loadAvailability);
 
-    // Disable fully booked dates dynamically
+    // Disable fully booked/closed dates dynamically; add visual styling
     async function refreshDisabledDates() {
         try {
             const params = new URLSearchParams({ start: today });
@@ -158,11 +158,73 @@ document.addEventListener('DOMContentLoaded', function() {
             const fullyBooked = new Set(data.dates || []);
             dateEl.addEventListener('input', function() {
                 if (fullyBooked.has(this.value)) {
-                    alert('Selected date is fully booked. Please choose another date.');
+                    alert('Selected date is unavailable (closed or fully booked). Please choose another date.');
                     this.value = '';
                 }
             });
+
+            // Visual hint below the input
+            const hintId = 'blockedDatesHint';
+            let hint = document.getElementById(hintId);
+            if (!hint) {
+                hint = document.createElement('div');
+                hint.id = hintId;
+                hint.className = 'text-xs text-gray-500 mt-1';
+                dateEl.parentElement.appendChild(hint);
+            }
+            if (fullyBooked.size > 0) {
+                const examples = Array.from(fullyBooked).slice(0, 5).join(', ');
+                hint.innerHTML = `<span class="line-through text-gray-400">Blocked dates</span>: <span class="text-gray-600">${examples}${fullyBooked.size>5?'...':''}</span>`;
+            }
+
+            // Render blocked-dates calendar grid with disabled (unclickable) dates
+            renderBlockedCalendar(fullyBooked);
         } catch (e) {}
+    }
+
+    function renderBlockedCalendar(blockedSet) {
+        const containerId = 'calendar_preview_blocked';
+        let container = document.getElementById(containerId);
+        if (!container) {
+            container = document.createElement('div');
+            container.id = containerId;
+            container.className = 'mt-2';
+            dateEl.parentElement.appendChild(container);
+        }
+        const base = dateEl.value ? new Date(dateEl.value) : new Date();
+        const year = base.getFullYear();
+        const month = base.getMonth();
+        const first = new Date(year, month, 1);
+        const last = new Date(year, month + 1, 0);
+        const startWeekday = (first.getDay() + 6) % 7; // Monday=0
+        const daysInMonth = last.getDate();
+
+        let html = '';
+        html += `<div class="text-xs text-gray-600 mb-1">${first.toLocaleString([], { month: 'long', year: 'numeric' })}</div>`;
+        html += '<div class="grid grid-cols-7 gap-1 text-center text-xs">';
+        const labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+        html += labels.map(l=>`<div class=\"text-gray-500\">${l}</div>`).join('');
+        for (let i=0;i<startWeekday;i++) html += '<div></div>';
+        const todayStrLocal = new Date().toISOString().split('T')[0];
+        for (let d=1; d<=daysInMonth; d++) {
+            const dayStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const isBlocked = blockedSet.has(dayStr);
+            const isPastMin = dayStr < dateEl.min; // respect min
+            const disabled = isBlocked || isPastMin;
+            const classes = disabled ? 'bg-gray-200 text-gray-400 line-through cursor-not-allowed' : (dayStr < todayStrLocal ? 'text-gray-300' : 'hover:bg-yellow-100 cursor-pointer');
+            html += `<button type=\"button\" data-date=\"${dayStr}\" ${disabled?'disabled':''} class=\"px-2 py-1 rounded ${classes}\">${d}</button>`;
+        }
+        html += '</div>';
+        container.innerHTML = html;
+        container.querySelectorAll('button[data-date]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const value = btn.getAttribute('data-date');
+                if (blockedSet.has(value) || value < dateEl.min) return;
+                dateEl.value = value;
+                const ev = new Event('change');
+                dateEl.dispatchEvent(ev);
+            });
+        });
     }
     refreshDisabledDates();
     // Initial services load on page open

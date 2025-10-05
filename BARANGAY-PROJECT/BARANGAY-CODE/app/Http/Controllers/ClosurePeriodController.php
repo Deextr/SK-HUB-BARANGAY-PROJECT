@@ -105,7 +105,30 @@ class ClosurePeriodController extends Controller
     public function destroy(ClosurePeriod $closurePeriod)
     {
         $closurePeriod->delete();
-        return redirect()->route('admin.closure_periods.index')->with('status', 'Closure period deleted.');
+        return redirect()->route('admin.closure_periods.index')->with('status', 'Closure period archived.');
+    }
+
+    public function archives(Request $request)
+    {
+        $items = ClosurePeriod::onlyTrashed()
+            ->when($request->filled('q'), function($q) use ($request) {
+                $term = $request->get('q');
+                $q->where('reason', 'like', "%$term%")
+                  ->orWhere('status', 'like', "%$term%")
+                  ->orWhereDate('start_date', $term)
+                  ->orWhereDate('end_date', $term);
+            })
+            ->orderByDesc('deleted_at')
+            ->paginate(6)
+            ->withQueryString();
+        return view('admin.closure_periods_archives', compact('items'));
+    }
+
+    public function restore($id)
+    {
+        $item = ClosurePeriod::onlyTrashed()->findOrFail($id);
+        $item->restore();
+        return redirect()->route('admin.closure_periods.archives')->with('status', 'Closure period unarchived.');
     }
 
     public function closedDatesApi(Request $request)
