@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 05, 2025 at 05:27 PM
+-- Generation Time: Oct 08, 2025 at 03:02 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -209,7 +209,10 @@ INSERT INTO `reservations` (`id`, `user_id`, `service_id`, `reference_no`, `rese
 (17, 4, 1, 'RSV-20251005-92CA40', '2025-10-29', '08:00:00', '17:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-10-05 08:40:25', '2025-10-05 08:42:52'),
 (18, 4, 1, 'RSV-20251005-37735D', '2025-10-22', '08:00:00', '17:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-10-05 08:49:50', '2025-10-05 08:53:58'),
 (19, 4, 1, 'RSV-20251005-5B74E1', '2025-10-06', '08:00:00', '17:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-10-05 09:12:33', '2025-10-05 09:13:02'),
-(20, 4, 3, 'RSV-20251005-5AF675', '2025-10-18', '08:00:00', '17:00:00', '09:06:00', '14:07:00', 1, 'completed', NULL, '2025-10-05 10:59:10', '2025-10-05 11:08:11');
+(20, 4, 3, 'RSV-20251005-5AF675', '2025-10-18', '08:00:00', '17:00:00', '09:06:00', '14:07:00', 1, 'completed', NULL, '2025-10-05 10:59:10', '2025-10-05 11:08:11'),
+(21, 4, 4, 'RSV-20251007-16A430', '2025-10-08', '08:00:00', '17:00:00', '13:39:00', NULL, 1, 'cancelled', NULL, '2025-10-07 05:39:04', '2025-10-07 05:40:54'),
+(22, 4, 2, 'RSV-20251007-00D53D', '2025-10-07', '08:00:00', '17:00:00', '13:42:00', '13:45:00', 1, 'completed', NULL, '2025-10-07 05:41:17', '2025-10-07 05:45:32'),
+(23, 5, 2, 'RSV-20251007-91598A', '2025-10-08', '08:00:00', '17:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-10-07 12:50:44', '2025-10-07 12:51:21');
 
 -- --------------------------------------------------------
 
@@ -259,7 +262,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('AGu17mn9xX9iTUxnIpavIbrrPCg7Xym2XcHqSLdF', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiWnkxUFpYdXQ0S3FWMVpWV20zVzFVWEFPWHZlUktMZDAyaTV5U1R3NyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9sb2dpbiI7fX0=', 1759678007);
+('GvFV3XoFBNDf8XVbx8hUNN6HSGhLQlBP9DFW99sX', 5, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoieUE1UzRKQ2FtOThNQ2FXSFNDMzFyM241OGVhQXVUQXIyNzZkUmhCSiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6NDI6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9yZXNpZGVudC9yZXNlcnZhdGlvbiI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjU7fQ==', 1759841482);
 
 -- --------------------------------------------------------
 
@@ -407,7 +410,7 @@ ALTER TABLE `migrations`
 -- AUTO_INCREMENT for table `reservations`
 --
 ALTER TABLE `reservations`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `services`

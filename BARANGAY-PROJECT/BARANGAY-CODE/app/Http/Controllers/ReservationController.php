@@ -34,8 +34,9 @@ class ReservationController extends Controller
             })
             ->update(['status' => 'completed']);
 
-        $allowedSorts = ['reservation_date', 'reference_no', 'status'];
-        $sort = in_array($request->get('sort'), $allowedSorts) ? $request->get('sort') : 'reservation_date';
+        // Default to latest created bookings first
+        $allowedSorts = ['reservation_date', 'reference_no', 'status', 'created_at'];
+        $sort = in_array($request->get('sort'), $allowedSorts) ? $request->get('sort') : 'created_at';
         $direction = $request->get('direction') === 'asc' ? 'asc' : 'desc';
 
         $items = Reservation::with('service')
@@ -54,6 +55,7 @@ class ReservationController extends Controller
             })
             ->when($request->filled('date'), fn($q) => $q->whereDate('reservation_date', $request->date))
             ->orderBy($sort, $direction)
+            // Tiebreaker: for same date/time, show later start times first when sorting desc
             ->orderBy('start_time', $direction === 'asc' ? 'asc' : 'desc')
             ->paginate(6)
             ->withQueryString();
@@ -232,7 +234,8 @@ class ReservationController extends Controller
         }
         $exists = Reservation::where('user_id', Auth::id())
             ->whereDate('reservation_date', $date)
-            ->whereIn('status', ['pending','confirmed'])
+            // Block another reservation for the same date even if it was completed
+            ->whereIn('status', ['pending','confirmed','completed'])
             ->exists();
         return response()->json([
             'blocked' => $exists,
@@ -391,7 +394,8 @@ class ReservationController extends Controller
     {
         $exists = Reservation::where('user_id', $userId)
             ->whereDate('reservation_date', $date)
-            ->whereIn('status', ['pending', 'confirmed'])
+            // Completed reservations still count for the once-per-day rule
+            ->whereIn('status', ['pending', 'confirmed', 'completed'])
             ->exists();
         if ($exists) {
             abort(422, 'You already have a reservation for this date.');
@@ -403,7 +407,8 @@ class ReservationController extends Controller
         // Cooldown resets at 12:00 AM local time. If the user already created a booking today, block another regardless of chosen date.
         $existsToday = Reservation::where('user_id', $userId)
             ->whereDate('created_at', now()->toDateString())
-            ->whereIn('status', ['pending', 'confirmed'])
+            // Count completed reservations as well for the same-day cooldown
+            ->whereIn('status', ['pending', 'confirmed', 'completed'])
             ->exists();
         if ($existsToday) {
             throw ValidationException::withMessages([
@@ -416,7 +421,8 @@ class ReservationController extends Controller
     {
         $existsToday = Reservation::where('user_id', $userId)
             ->whereDate('created_at', now()->toDateString())
-            ->whereIn('status', ['pending', 'confirmed'])
+            // Show cooldown when a reservation was made today in any non-cancelled state
+            ->whereIn('status', ['pending', 'confirmed', 'completed'])
             ->exists();
         if (!$existsToday) {
             return [false, null];
