@@ -243,6 +243,84 @@ class ReservationController extends Controller
         ]);
     }
 
+    public function getUnavailableDates(Request $request)
+    {
+        $start = $request->query('start', now()->toDateString());
+        $end = $request->query('end', now()->addMonths(3)->toDateString());
+
+        $closedDates = [];
+        $fullyBookedDates = [];
+
+        // Get all active full-day closure periods
+        $closurePeriods = ClosurePeriod::where('is_full_day', true)
+            ->where('status', 'active')
+            ->get();
+
+        // Process closure periods and expand date ranges
+        foreach ($closurePeriods as $period) {
+            $startDate = \Carbon\Carbon::parse($period->start_date);
+            $endDate = \Carbon\Carbon::parse($period->end_date);
+            
+            // Filter by requested date range
+            $rangeStart = \Carbon\Carbon::parse($start);
+            $rangeEnd = \Carbon\Carbon::parse($end);
+            
+            $currentDate = $startDate->max($rangeStart);
+            $lastDate = $endDate->min($rangeEnd);
+            
+            while ($currentDate->lte($lastDate)) {
+                $dateStr = $currentDate->toDateString();
+                if (!in_array($dateStr, $closedDates)) {
+                    $closedDates[] = $dateStr;
+                }
+                $currentDate->addDay();
+            }
+        }
+
+        // Check for fully booked dates
+        $services = Service::where('is_active', true)->get(['id', 'capacity_units']);
+        if (!$services->isEmpty()) {
+            $current = \Carbon\Carbon::parse($start);
+            $endCarbon = \Carbon\Carbon::parse($end);
+            
+            while ($current->lte($endCarbon)) {
+                $dateStr = $current->toDateString();
+                
+                // Skip if already in closed dates
+                if (!in_array($dateStr, $closedDates)) {
+                    $isFullyBooked = true;
+                    foreach ($services as $service) {
+                        $totalUnits = (int) Reservation::where('service_id', $service->id)
+                            ->whereDate('reservation_date', $dateStr)
+                            ->whereIn('status', ['pending', 'confirmed'])
+                            ->sum('units_reserved');
+                        
+                        if ($totalUnits < $service->capacity_units) {
+                            $isFullyBooked = false;
+                            break;
+                        }
+                    }
+                    
+                    if ($isFullyBooked) {
+                        $fullyBookedDates[] = $dateStr;
+                    }
+                }
+                
+                $current->addDay();
+            }
+        }
+
+        // Combine all unavailable dates
+        $unavailableDates = array_unique(array_merge($closedDates, $fullyBookedDates));
+        sort($unavailableDates);
+
+        return response()->json([
+            'closed_dates' => $closedDates,
+            'fully_booked_dates' => $fullyBookedDates,
+            'unavailable_dates' => $unavailableDates
+        ]);
+    }
+
     public function getAvailableTimeSlots(Request $request)
     {
         $date = $request->query('date');

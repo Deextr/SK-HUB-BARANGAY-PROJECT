@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 02, 2025 at 07:12 AM
+-- Generation Time: Nov 03, 2025 at 08:24 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -70,7 +70,9 @@ CREATE TABLE `closure_periods` (
 --
 
 INSERT INTO `closure_periods` (`id`, `start_date`, `end_date`, `reason`, `is_full_day`, `start_time`, `end_time`, `status`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(10, '2025-11-02', '2025-11-05', 'holiday', 1, NULL, NULL, 'active', '2025-11-02 04:37:26', '2025-11-02 04:38:49', NULL);
+(11, '2025-11-04', '2025-11-06', NULL, 1, NULL, NULL, 'active', '2025-11-02 12:37:55', '2025-11-02 12:37:55', NULL),
+(12, '2025-11-07', '2025-11-07', NULL, 1, NULL, NULL, 'active', '2025-11-03 05:41:41', '2025-11-03 05:41:54', NULL),
+(13, '2025-11-10', '2025-11-10', 'meeting', 1, NULL, NULL, 'pending', '2025-11-03 07:07:42', '2025-11-03 07:07:42', NULL);
 
 -- --------------------------------------------------------
 
@@ -202,7 +204,8 @@ INSERT INTO `reservations` (`id`, `user_id`, `service_id`, `reference_no`, `rese
 (35, 12, 1, 'RSV-20251102-755285', '2025-11-09', '08:00:00', '10:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-11-02 03:47:40', '2025-11-02 03:49:44'),
 (36, 9, 1, 'RSV-20251102-852935', '2025-11-04', '08:00:00', '10:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-11-02 04:37:56', '2025-11-02 04:38:49'),
 (37, 12, 1, 'RSV-20251102-AC2939', '2025-11-03', '08:00:00', '10:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-11-02 04:38:16', '2025-11-02 04:38:49'),
-(38, 9, 1, 'RSV-20251102-B00147', '2025-11-06', '08:00:00', '10:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-11-02 04:50:28', '2025-11-02 04:51:11');
+(38, 9, 1, 'RSV-20251102-B00147', '2025-11-06', '08:00:00', '10:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-11-02 04:50:28', '2025-11-02 04:51:11'),
+(39, 9, 1, 'RSV-20251103-BB437E', '2025-11-07', '09:00:00', '10:00:00', NULL, NULL, 1, 'cancelled', NULL, '2025-11-03 00:38:06', '2025-11-03 00:41:46');
 
 -- --------------------------------------------------------
 
@@ -254,9 +257,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('4b9iE0NElElyrPjmP6kONgzFZXsm8l202Wucov8y', 9, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiMXRCbUFhMDg1T1lESXJZU3VuaHl5UGtqcDc4TXpES2J0a2p5RUlaeiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Njk6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9yZXNpZGVudC9yZXNlcnZhdGlvbi90aW1lLXNsb3RzP2RhdGU9MjAyNS0xMS0wNiI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjk7fQ==', 1762063845),
-('9oX8rXVktHfxi1qIJAhyK16DCoWdSHXTGFiW0h7i', 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiTTJnOVpVajhLZGpuZ0txanR0T0dobGNERmlFRE4xemtUZXVCYWxscyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6NDI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9yZXNpZGVudC9yZXNlcnZhdGlvbiI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjEyO30=', 1762058360),
-('tl8yBlcRyvdjMNFF4JqBxBpugzEb3wWx6Oo4ThXY', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiR09yUldWZjlvZ2o5dXRKdlpVNXpWWVJPRVRUQmF4SER3Y0QzMzBXTyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1762054828);
+('BZy7x0iLH89vZY1G2okAf9JdUcSWeuleQIC61e5F', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiUWJMbVNYTmdRdUxyMW9KUkhOZXZTQ3NhUERhQklKZ25ubFJrbW1CbiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6NDM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hZG1pbi9jbG9zdXJlLXBlcmlvZHMiO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1762154197);
 
 -- --------------------------------------------------------
 
@@ -389,7 +390,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `closure_periods`
 --
 ALTER TABLE `closure_periods`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `failed_jobs`
@@ -413,7 +414,7 @@ ALTER TABLE `migrations`
 -- AUTO_INCREMENT for table `reservations`
 --
 ALTER TABLE `reservations`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
 
 --
 -- AUTO_INCREMENT for table `services`

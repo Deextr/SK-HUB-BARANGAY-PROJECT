@@ -114,6 +114,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/reservation/active-services', [ReservationController::class, 'activeServices'])->name('resident.reservation.active_services');
         Route::get('/reservation/fully-booked-dates', [ReservationController::class, 'fullyBookedDates'])->name('resident.reservation.fully_booked');
         Route::get('/reservation/has-reservation', [ReservationController::class, 'hasReservationForDate'])->name('resident.reservation.has_for_date');
+        Route::get('/reservation/unavailable-dates', [ReservationController::class, 'getUnavailableDates'])->name('resident.reservation.unavailable_dates');
         Route::get('/reservation/time-slots', [ReservationController::class, 'getAvailableTimeSlots'])->name('resident.reservation.time_slots');
 
         // Store new reservation (if you want to keep the POST route for later)

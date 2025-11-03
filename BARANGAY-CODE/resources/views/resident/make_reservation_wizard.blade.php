@@ -56,7 +56,8 @@
             <div>
                 <label for="reservation_date" class="block text-sm font-medium text-gray-700 mb-2">Reservation Date</label>
                 <input type="date" id="reservation_date" name="reservation_date" min="{{ date('Y-m-d') }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent" @isset($onCooldown) @if($onCooldown) disabled @endif @endisset>
-                <p class="text-xs text-gray-500 mt-1">Fully booked or closed dates will show no available services.</p>
+                <div id="dateStatusMessage" class="mt-2 text-sm font-medium hidden"></div>
+                <p class="text-xs text-gray-500 mt-1">Select a date to check availability.</p>
             </div>
         </div>
 
@@ -84,13 +85,33 @@
 
                 <!-- Table Container -->
                 <div id="tableContainer" class="hidden">
-                    <!-- Sort Controls -->
-                    <div class="mb-4 flex flex-wrap gap-2">
-                        <button type="button" id="sortByTime" class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm">Sort by Time</button>
-                        <button type="button" id="sortByDuration" class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm">Sort by Duration</button>
-                        <button type="button" id="sortByService" class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm">Sort by Service</button>
-                        <button type="button" id="sortByAvailability" class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm">Sort by Availability</button>
-                    </div>
+					<!-- Service Filter -->
+					<div class="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+						<div class="sm:col-span-1">
+							<label for="serviceFilter" class="block text-sm font-medium text-gray-700 mb-1">Service</label>
+							<select id="serviceFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+								<option value="" selected>Select a service</option>
+							</select>
+						</div>
+					</div>
+					<!-- Sort Controls -->
+					<div class="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+						<div>
+							<label for="sortFieldSelect" class="block text-sm font-medium text-gray-700 mb-1">Sort by</label>
+							<select id="sortFieldSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+								<option value="time" selected>Time</option>
+								<option value="duration">Duration</option>
+								<option value="availability">Availability</option>
+							</select>
+						</div>
+						<div>
+							<label for="sortDirSelect" class="block text-sm font-medium text-gray-700 mb-1">Order</label>
+							<select id="sortDirSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+								<option value="asc" selected>Ascending</option>
+								<option value="desc">Descending</option>
+							</select>
+						</div>
+					</div>
 
                     <!-- Selection Table -->
                     <div class="overflow-x-auto">
@@ -117,6 +138,9 @@
                             <span id="paginationInfo">Showing 1 to 10 of 0 entries</span>
                         </div>
                         <div class="flex items-center space-x-2">
+							<button id="firstPage" class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+								First
+							</button>
                             <button id="prevPage" class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                                 Previous
                             </button>
@@ -126,6 +150,9 @@
                             <button id="nextPage" class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                                 Next
                             </button>
+							<button id="lastPage" class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+								Last
+							</button>
                         </div>
                     </div>
                 </div>
@@ -192,13 +219,21 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentStep = 1;
     let availabilityData = null;
     let selectedSlot = null;
+	let lastLoadedDate = null;
     
     // Pagination state
     let currentPage = 1;
     let itemsPerPage = 10;
     let totalItems = 0;
     let totalPages = 0;
-    let currentSort = 'time'; // 'time', 'duration', 'service', 'availability'
+	let currentSortField = 'time'; // 'time', 'duration', 'service', 'availability'
+	let currentSortDir = 'asc'; // 'asc' | 'desc'
+	let selectedServiceFilter = '';
+    
+    // Unavailable dates tracking
+    let unavailableDates = [];
+    let closedDates = [];
+    let fullyBookedDates = [];
 
     const stepPanels = {
         1: document.getElementById('step1'),
@@ -236,7 +271,24 @@ document.addEventListener('DOMContentLoaded', function() {
         btnNext.classList.toggle('hidden', step === 4);
         btnSubmit.classList.toggle('hidden', step !== 4);
         
-        if (step === 2) loadAvailability();
+		if (step === 2) {
+			// Restore selected service filter if a slot was chosen previously
+			if (selectedSlot) {
+				const serviceFilterEl = document.getElementById('serviceFilter');
+				if (serviceFilterEl && String(serviceFilterEl.value) !== String(selectedSlot.service_id)) {
+					serviceFilterEl.value = String(selectedSlot.service_id);
+					selectedServiceFilter = String(selectedSlot.service_id);
+				}
+			}
+			// Load data only if not loaded yet or date changed; otherwise re-render preserving selection
+			if (!availabilityData || lastLoadedDate !== dateEl.value) {
+				loadAvailability();
+			} else {
+				const allRows = flattenAvailabilityData();
+				sortTableData(allRows);
+				displayCurrentPage(allRows, true);
+			}
+		}
         if (step === 4) updateOverview();
     }
 
@@ -259,6 +311,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (step === 1) {
             if (!dateEl.value) { 
                 alert('Please select a reservation date.'); 
+                return false;
+            }
+            // Check if selected date is closed
+            if (closedDates.includes(dateEl.value)) {
+                alert('The selected date is closed. Please choose another date.');
+                return false;
+            }
+            // Check if selected date is fully booked
+            if (fullyBookedDates.includes(dateEl.value)) {
+                alert('The selected date is fully booked. Please choose another date.');
                 return false;
             }
         }
@@ -299,7 +361,7 @@ document.addEventListener('DOMContentLoaded', function() {
         tableContainer.classList.add('hidden');
         
         try {
-            const params = new URLSearchParams({ date: dateEl.value });
+			const params = new URLSearchParams({ date: dateEl.value });
             const res = await fetch(`{{ route('resident.reservation.time_slots') }}?` + params.toString(), { 
                 headers: { 'Accept': 'application/json' } 
             });
@@ -312,8 +374,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            availabilityData = data;
-            populateTable(data);
+			availabilityData = data;
+			lastLoadedDate = dateEl.value;
+			populateServiceFilter(data);
+			populateTable(data);
             loadingState.classList.add('hidden');
             tableContainer.classList.remove('hidden');
             
@@ -331,6 +395,7 @@ document.addEventListener('DOMContentLoaded', function() {
             service.availability.forEach(availability => {
                 allRows.push({
                     service: service.service,
+					serviceId: service.service.id,
                     timeSlot: availability.time_slot,
                     availableUnits: availability.available_units,
                     isAvailable: availability.is_available,
@@ -342,72 +407,88 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // Sort the data
-        sortTableData(allRows);
+		// Sort the data
+		sortTableData(allRows);
         
         // Update pagination info
         totalItems = allRows.length;
         totalPages = Math.ceil(totalItems / itemsPerPage);
         currentPage = 1; // Reset to first page
         
-        // Display the current page
-        displayCurrentPage(allRows);
+		// Display the current page (ensure selected visible on initial render)
+		displayCurrentPage(allRows, true);
     }
 
-    function sortTableData(rows) {
-        switch(currentSort) {
+	function sortTableData(rows) {
+		const dir = currentSortDir === 'desc' ? -1 : 1;
+		switch(currentSortField) {
             case 'time':
-                rows.sort((a, b) => {
-                    // Sort by start time first, then by duration
-                    if (a.timeSlot.start_time !== b.timeSlot.start_time) {
-                        return a.timeSlot.start_time.localeCompare(b.timeSlot.start_time);
-                    }
-                    return a.durationMinutes - b.durationMinutes;
-                });
+				rows.sort((a, b) => {
+					if (a.timeSlot.start_time !== b.timeSlot.start_time) {
+						return a.timeSlot.start_time.localeCompare(b.timeSlot.start_time) * dir;
+					}
+					return (a.durationMinutes - b.durationMinutes) * dir;
+				});
                 break;
             case 'duration':
-                rows.sort((a, b) => {
-                    // Sort by duration first (30 mins, 1 hour, 1.5 hours, 2 hours), then by start time
-                    if (a.durationMinutes !== b.durationMinutes) {
-                        return a.durationMinutes - b.durationMinutes;
-                    }
-                    return a.timeSlot.start_time.localeCompare(b.timeSlot.start_time);
-                });
+				rows.sort((a, b) => {
+					if (a.durationMinutes !== b.durationMinutes) {
+						return (a.durationMinutes - b.durationMinutes) * dir;
+					}
+					return a.timeSlot.start_time.localeCompare(b.timeSlot.start_time) * dir;
+				});
                 break;
             case 'service':
-                rows.sort((a, b) => {
-                    // Sort by service name first, then by start time
-                    if (a.serviceName !== b.serviceName) {
-                        return a.serviceName.localeCompare(b.serviceName);
-                    }
-                    return a.timeSlot.start_time.localeCompare(b.timeSlot.start_time);
-                });
+				rows.sort((a, b) => {
+					if (a.serviceName !== b.serviceName) {
+						return a.serviceName.localeCompare(b.serviceName) * dir;
+					}
+					return a.timeSlot.start_time.localeCompare(b.timeSlot.start_time) * dir;
+				});
                 break;
             case 'availability':
-                rows.sort((a, b) => {
-                    // Sort by availability first, then by start time
-                    if (b.availableUnits !== a.availableUnits) {
-                        return b.availableUnits - a.availableUnits;
-                    }
-                    return a.timeSlot.start_time.localeCompare(b.timeSlot.start_time);
-                });
+				rows.sort((a, b) => {
+					if (a.availableUnits !== b.availableUnits) {
+						return (a.availableUnits - b.availableUnits) * dir;
+					}
+					return a.timeSlot.start_time.localeCompare(b.timeSlot.start_time) * dir;
+				});
                 break;
         }
     }
 
-    function displayCurrentPage(allRows) {
+	function displayCurrentPage(allRows, ensureSelectionVisible = false) {
         const tbody = document.getElementById('availabilityTableBody');
         tbody.innerHTML = '';
-        
+
+		// Filter by selected service
+		const filteredRows = allRows.filter(row => {
+			return selectedServiceFilter === '' || String(row.serviceId) === String(selectedServiceFilter);
+		});
+
         // Calculate pagination
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-        const currentPageRows = allRows.slice(startIndex, endIndex);
+		totalItems = filteredRows.length;
+		totalPages = Math.ceil(totalItems / itemsPerPage);
+		// If there is a previously selected slot, optionally ensure it's visible by moving to its page
+		if (ensureSelectionVisible && selectedSlot && totalItems > 0) {
+			const selectedValue = `${selectedSlot.service_id}_${selectedSlot.start_time}_${selectedSlot.end_time}`;
+			const idx = filteredRows.findIndex(r => `${r.service.id}_${r.timeSlot.start_time}_${r.timeSlot.end_time}` === selectedValue);
+			if (idx !== -1) {
+				const desiredPage = Math.floor(idx / itemsPerPage) + 1;
+				if (desiredPage !== currentPage) {
+					currentPage = desiredPage;
+				}
+			}
+		}
+
+		const startIndex = (currentPage - 1) * itemsPerPage;
+		const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+		const currentPageRows = filteredRows.slice(startIndex, endIndex);
         
         // Display rows for current page
-        currentPageRows.forEach(row => {
+		currentPageRows.forEach(row => {
             const tr = document.createElement('tr');
-            tr.className = row.isAvailable ? 'hover:bg-gray-50' : 'bg-gray-100 opacity-60';
+			tr.className = row.isAvailable ? 'hover:bg-gray-50 cursor-pointer' : 'bg-gray-100 opacity-60 cursor-not-allowed';
             
             // Format time display
             const formatTime = (timeStr) => {
@@ -420,7 +501,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const timeDisplay = `${formatTime(row.timeSlot.start_time)} - ${formatTime(row.timeSlot.end_time)}`;
             
-            tr.innerHTML = `
+			tr.innerHTML = `
                 <td class="px-4 py-3 text-sm text-gray-900">${timeDisplay}</td>
                 <td class="px-4 py-3 text-sm text-gray-900">${row.durationDisplay}</td>
                 <td class="px-4 py-3 text-sm text-gray-900">${row.serviceName}</td>
@@ -438,9 +519,19 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             
             tbody.appendChild(tr);
+
+			// Row click behavior: select radio and highlight
+			tr.addEventListener('click', function(e) {
+				const radio = this.querySelector('.slot-radio');
+				if (!radio || radio.disabled) return;
+				if (e.target !== radio) {
+					radio.checked = true;
+					radio.dispatchEvent(new Event('change', { bubbles: true }));
+				}
+			});
         });
         
-        // Add event listeners to radio buttons
+		// Add event listeners to radio buttons
         document.querySelectorAll('.slot-radio').forEach(radio => {
             radio.addEventListener('change', function() {
                 if (this.checked) {
@@ -460,9 +551,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('selected_service_id').value = serviceId;
                     document.getElementById('selected_start_time').value = startTime;
                     document.getElementById('selected_end_time').value = endTime;
+
+					// Visual highlight for selected row
+					document.querySelectorAll('#availabilityTableBody tr').forEach(r => r.classList.remove('ring-2','ring-yellow-400','bg-yellow-50'));
+					this.closest('tr').classList.add('ring-2','ring-yellow-400','bg-yellow-50');
                 }
             });
         });
+
+		// Re-apply selection and highlight if returning to Step 2
+		if (selectedSlot) {
+			const value = `${selectedSlot.service_id}_${selectedSlot.start_time}_${selectedSlot.end_time}`;
+			const selectedRadio = Array.from(document.querySelectorAll('.slot-radio')).find(r => r.value === value);
+			if (selectedRadio && !selectedRadio.disabled) {
+				selectedRadio.checked = true;
+				selectedRadio.dispatchEvent(new Event('change', { bubbles: true }));
+			}
+		}
         
         // Update pagination controls
         updatePaginationControls();
@@ -472,6 +577,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const paginationInfo = document.getElementById('paginationInfo');
         const prevButton = document.getElementById('prevPage');
         const nextButton = document.getElementById('nextPage');
+		const firstButton = document.getElementById('firstPage');
+		const lastButton = document.getElementById('lastPage');
         const pageNumbers = document.getElementById('pageNumbers');
         
         // Update pagination info
@@ -480,8 +587,10 @@ document.addEventListener('DOMContentLoaded', function() {
         paginationInfo.textContent = `Showing ${startItem} to ${endItem} of ${totalItems} entries`;
         
         // Update navigation buttons
-        prevButton.disabled = currentPage === 1;
-        nextButton.disabled = currentPage === totalPages || totalPages === 0;
+		prevButton.disabled = currentPage === 1;
+		nextButton.disabled = currentPage === totalPages || totalPages === 0;
+		firstButton.disabled = currentPage === 1 || totalPages === 0;
+		lastButton.disabled = currentPage === totalPages || totalPages === 0;
         
         // Update page numbers
         pageNumbers.innerHTML = '';
@@ -513,7 +622,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Re-sort and display current page
             const allRows = flattenAvailabilityData();
             sortTableData(allRows);
-            displayCurrentPage(allRows);
+            displayCurrentPage(allRows, false);
         }
     }
 
@@ -524,6 +633,7 @@ document.addEventListener('DOMContentLoaded', function() {
             service.availability.forEach(availability => {
                 allRows.push({
                     service: service.service,
+					serviceId: service.service.id,
                     timeSlot: availability.time_slot,
                     availableUnits: availability.available_units,
                     isAvailable: availability.is_available,
@@ -537,42 +647,62 @@ document.addEventListener('DOMContentLoaded', function() {
         return allRows;
     }
 
+	function populateServiceFilter(data) {
+		const select = document.getElementById('serviceFilter');
+		// Reset options (keep placeholder)
+		select.innerHTML = '<option value="" selected>Select a service</option>';
+		const services = (data.services || []).map(s => ({ id: s.service.id, name: s.service.name }));
+		// Deduplicate
+		const seen = new Set();
+		services.forEach(s => {
+			if (seen.has(String(s.id))) return;
+			seen.add(String(s.id));
+			const opt = document.createElement('option');
+			opt.value = s.id;
+			opt.textContent = s.name;
+			select.appendChild(opt);
+		});
+
+		select.addEventListener('change', function() {
+			selectedServiceFilter = this.value;
+			selectedSlot = null; // reset selection when changing service
+			document.getElementById('selected_service_id').value = '';
+			document.getElementById('selected_start_time').value = '';
+			document.getElementById('selected_end_time').value = '';
+			currentPage = 1;
+			const allRows = flattenAvailabilityData();
+			sortTableData(allRows);
+			displayCurrentPage(allRows, true);
+		});
+	}
+
     // Sort functionality
-    document.getElementById('sortByTime').addEventListener('click', function() {
-        if (!availabilityData) return;
-        currentSort = 'time';
-        currentPage = 1; // Reset to first page
-        const allRows = flattenAvailabilityData();
-        sortTableData(allRows);
-        displayCurrentPage(allRows);
-    });
+	// Sort dropdown handlers
+	document.getElementById('sortFieldSelect').addEventListener('change', function() {
+		if (!availabilityData) return;
+		currentSortField = this.value;
+		// Auto-choose sensible default direction
+		if (currentSortField === 'availability') {
+			currentSortDir = 'desc';
+			document.getElementById('sortDirSelect').value = 'desc';
+		} else {
+			currentSortDir = 'asc';
+			document.getElementById('sortDirSelect').value = 'asc';
+		}
+		currentPage = 1;
+		const allRows = flattenAvailabilityData();
+		sortTableData(allRows);
+        displayCurrentPage(allRows, true);
+	});
 
-    document.getElementById('sortByDuration').addEventListener('click', function() {
-        if (!availabilityData) return;
-        currentSort = 'duration';
-        currentPage = 1; // Reset to first page
-        const allRows = flattenAvailabilityData();
-        sortTableData(allRows);
-        displayCurrentPage(allRows);
-    });
-
-    document.getElementById('sortByService').addEventListener('click', function() {
-        if (!availabilityData) return;
-        currentSort = 'service';
-        currentPage = 1; // Reset to first page
-        const allRows = flattenAvailabilityData();
-        sortTableData(allRows);
-        displayCurrentPage(allRows);
-    });
-
-    document.getElementById('sortByAvailability').addEventListener('click', function() {
-        if (!availabilityData) return;
-        currentSort = 'availability';
-        currentPage = 1; // Reset to first page
-        const allRows = flattenAvailabilityData();
-        sortTableData(allRows);
-        displayCurrentPage(allRows);
-    });
+	document.getElementById('sortDirSelect').addEventListener('change', function() {
+		if (!availabilityData) return;
+		currentSortDir = this.value;
+		currentPage = 1;
+		const allRows = flattenAvailabilityData();
+		sortTableData(allRows);
+        displayCurrentPage(allRows, true);
+	});
 
     // Pagination navigation
     document.getElementById('prevPage').addEventListener('click', function() {
@@ -586,6 +716,18 @@ document.addEventListener('DOMContentLoaded', function() {
             goToPage(currentPage + 1);
         }
     });
+
+	document.getElementById('firstPage').addEventListener('click', function() {
+		if (totalPages > 0) {
+			goToPage(1);
+		}
+	});
+
+	document.getElementById('lastPage').addEventListener('click', function() {
+		if (totalPages > 0) {
+			goToPage(totalPages);
+		}
+	});
 
     // Wizard navigation
     btnNext.addEventListener('click', () => {
@@ -602,7 +744,77 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Load unavailable dates on page load
+    async function loadUnavailableDates() {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const threeMonthsLater = new Date();
+            threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+            const endDate = threeMonthsLater.toISOString().split('T')[0];
+            
+            const params = new URLSearchParams({ 
+                start: today,
+                end: endDate
+            });
+            
+            const res = await fetch(`{{ route('resident.reservation.unavailable_dates') }}?` + params.toString(), {
+                headers: { 'Accept': 'application/json' }
+            });
+            
+            const data = await res.json();
+            
+            unavailableDates = data.unavailable_dates || [];
+            closedDates = data.closed_dates || [];
+            fullyBookedDates = data.fully_booked_dates || [];
+            
+            console.log('Loaded unavailable dates:', {
+                unavailable: unavailableDates,
+                closed: closedDates,
+                fullyBooked: fullyBookedDates
+            });
+        } catch (e) {
+            console.error('Failed to load unavailable dates:', e);
+        }
+    }
+    
+    // Update date status message when date is selected
+    function updateDateStatus() {
+        const selectedDate = dateEl.value;
+        const statusMessage = document.getElementById('dateStatusMessage');
+        
+        if (!selectedDate) {
+            statusMessage.classList.add('hidden');
+            dateEl.classList.remove('border-red-500', 'border-orange-500');
+            dateEl.classList.add('border-gray-300');
+            return;
+        }
+        
+        console.log('Checking date:', selectedDate);
+        
+        if (closedDates.includes(selectedDate)) {
+            statusMessage.textContent = '⛔ This date is closed. The facility is not available.';
+            statusMessage.className = 'mt-2 text-sm font-medium text-red-600';
+            statusMessage.classList.remove('hidden');
+            dateEl.classList.remove('border-gray-300', 'border-orange-500');
+            dateEl.classList.add('border-red-500');
+        } else if (fullyBookedDates.includes(selectedDate)) {
+            statusMessage.textContent = '⚠️ This date is fully booked. No slots available.';
+            statusMessage.className = 'mt-2 text-sm font-medium text-orange-600';
+            statusMessage.classList.remove('hidden');
+            dateEl.classList.remove('border-gray-300', 'border-red-500');
+            dateEl.classList.add('border-orange-500');
+        } else {
+            statusMessage.classList.add('hidden');
+            dateEl.classList.remove('border-red-500', 'border-orange-500');
+            dateEl.classList.add('border-gray-300');
+        }
+    }
+    
+    // Listen for date changes
+    dateEl.addEventListener('change', updateDateStatus);
+    
     // Init
+    loadUnavailableDates();
     setStep(1);
 });
 </script>

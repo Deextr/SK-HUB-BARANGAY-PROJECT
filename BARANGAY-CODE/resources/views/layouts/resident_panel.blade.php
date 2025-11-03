@@ -7,10 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-gray-100 md:flex">
+<body class="bg-gray-100">
 
     <!-- Sidebar -->
-    <div id="residentSidebar" class="w-full md:w-64 bg-yellow-500 text-gray-900 min-h-screen flex flex-col md:static fixed inset-y-0 left-0 z-40 transform md:transform-none transition-transform duration-200 -translate-x-full md:translate-x-0">
+    <div id="residentSidebar" class="w-full md:w-64 bg-yellow-500 text-gray-900 h-screen flex flex-col fixed inset-y-0 left-0 z-40 transform md:transform-none transition-transform duration-200 -translate-x-full md:translate-x-0 overflow-y-auto">
         <div class="p-6 flex flex-col items-center border-b border-yellow-400">
             <!-- Logo Circle -->
             <div class="flex justify-center mb-2 -mt-2">
@@ -28,21 +28,21 @@
         <nav class="flex-1 mt-4">
             <!-- Dashboard -->
             <a href="{{ route('resident.dashboard') }}" 
-               class="flex items-center py-3 px-6 transition duration-200 {{ request()->routeIs('resident.dashboard') ? 'bg-yellow-400' : '' }}">
+               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-400 {{ request()->routeIs('resident.dashboard') ? 'bg-yellow-400' : '' }}">
                 <i class="fas fa-tachometer-alt w-6 mr-3"></i>
                 Dashboard
             </a>
 
             <!-- Make Reservation -->
             <a href="{{ route('resident.reservation.add') }}" 
-               class="flex items-center py-3 px-6 transition duration-200 {{ request()->routeIs('resident.reservation.add') ? 'bg-yellow-400' : '' }}">
+               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-400 {{ request()->routeIs('resident.reservation.add') ? 'bg-yellow-400' : '' }}">
                 <i class="fas fa-plus-circle w-6 mr-3"></i>
                 Make Reservation
             </a>
 
             <!-- My Reservations -->
             <a href="{{ route('resident.reservation') }}" 
-               class="flex items-center py-3 px-6 transition duration-200 {{ request()->routeIs('resident.reservation') ? 'bg-yellow-400' : '' }}">
+               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-400 {{ request()->routeIs('resident.reservation') ? 'bg-yellow-400' : '' }}">
                 <i class="fas fa-calendar-check w-6 mr-3"></i>
                 My Reservations
             </a>
@@ -63,7 +63,7 @@
     </div>
 
     <!-- Main Content -->
-    <div class="flex-1 p-4 md:p-8">
+    <div class="md:ml-64 p-4 md:p-8 min-h-screen">
         <!-- Header -->
         <div class="flex items-center justify-between mb-4 md:mb-8">
             <div class="flex items-center gap-3">

@@ -8,10 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-gray-100 md:flex">
+<body class="bg-gray-100">
 
     <!-- Sidebar -->
-    <div id="adminSidebar" class="w-full md:w-64 bg-yellow-500 text-gray-900 min-h-screen flex flex-col md:static fixed inset-y-0 left-0 z-40 transform md:transform-none transition-transform duration-200 -translate-x-full md:translate-x-0">
+    <div id="adminSidebar" class="w-full md:w-64 bg-yellow-500 text-gray-900 h-screen flex flex-col fixed inset-y-0 left-0 z-40 transform md:transform-none transition-transform duration-200 -translate-x-full md:translate-x-0 overflow-y-auto">
         <div class="p-6 flex flex-col items-center border-b border-yellow-400">
             <!-- Logo Circle -->
             <div class="flex justify-center mb-2 -mt-2">
@@ -27,37 +27,37 @@
 
         <nav class="flex-1 mt-4">
             <a href="{{ route('dashboard') }}" 
-               class="flex items-center py-3 px-6 transition duration-200 {{ request()->routeIs('dashboard') ? 'bg-yellow-400' : '' }}">
+               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-400 {{ request()->routeIs('dashboard') ? 'bg-yellow-400' : '' }}">
                 <i class="fas fa-tachometer-alt w-6 mr-3"></i>
                 Dashboard
             </a>
             
             <a href="{{ route('reservation.dashboard') }}" 
-               class="flex items-center py-3 px-6 transition duration-200 {{ request()->routeIs('reservation.dashboard') ? 'bg-yellow-400' : '' }}">
+               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-400 {{ request()->routeIs('reservation.dashboard') ? 'bg-yellow-400' : '' }}">
                 <i class="fas fa-calendar-check w-6 mr-3"></i>
                 Reservation
             </a>
             
             <a href="{{ route('admin.services.index') }}" 
-               class="flex items-center py-3 px-6 transition duration-200 {{ request()->routeIs('admin.services.index') ? 'bg-yellow-400' : '' }}">
+               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-400 {{ request()->routeIs('admin.services.index') ? 'bg-yellow-400' : '' }}">
                 <i class="fas fa-toolbox w-6 mr-3"></i>
                 Services
             </a>
 
             <a href="{{ route('admin.closure_periods.index') }}" 
-               class="flex items-center py-3 px-6 transition duration-200 {{ request()->routeIs('admin.closure_periods.index') ? 'bg-yellow-400' : '' }}">
+               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-400 {{ request()->routeIs('admin.closure_periods.index') ? 'bg-yellow-400' : '' }}">
                 <i class="fas fa-door-closed w-6 mr-3"></i>
                 Closure Periods
             </a>
 
             <a href="{{ route('admin.user_accounts.index') }}" 
-               class="flex items-center py-3 px-6 transition duration-200 {{ request()->routeIs('admin.user_accounts.*') ? 'bg-yellow-400' : '' }}">
+               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-400 {{ request()->routeIs('admin.user_accounts.*') ? 'bg-yellow-400' : '' }}">
                 <i class="fas fa-users w-6 mr-3"></i>
                 User Accounts
             </a>
 
             <a href="{{ route('admin.archives', ['tab' => 'services']) }}" 
-               class="flex items-center py-3 px-6 transition duration-200 {{ request()->routeIs('admin.archives') ? 'bg-yellow-400' : '' }}">
+               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-400 {{ request()->routeIs('admin.archives') ? 'bg-yellow-400' : '' }}">
                 <i class="fas fa-archive w-6 mr-3"></i>
                 Archives
             </a>
@@ -75,7 +75,7 @@
     </div>
 
     <!-- Main content -->
-    <div class="flex-1 p-4 md:p-8">
+    <div class="md:ml-64 p-4 md:p-8 min-h-screen">
         <!-- Header -->
         <div class="flex items-center justify-between mb-4 md:mb-8">
             <div class="flex items-center gap-3">
