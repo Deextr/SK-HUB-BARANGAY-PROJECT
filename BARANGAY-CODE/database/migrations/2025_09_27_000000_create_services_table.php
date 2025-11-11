@@ -10,12 +10,14 @@ return new class extends Migration
     {
         Schema::create('services', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('name', 100);
             $table->text('description')->nullable();
-            $table->unsignedInteger('capacity_units')->default(1);
+            $table->unsignedSmallInteger('capacity_units')->default(1);
             $table->boolean('is_active')->default(true);
             $table->softDeletes();
             $table->timestamps();
+            
+            $table->index('is_active');
         });
     }
 

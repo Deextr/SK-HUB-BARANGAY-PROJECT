@@ -83,9 +83,9 @@
                 <h1 class="text-2xl md:text-3xl font-bold text-gray-800">@yield('title', 'Dashboard')</h1>
             </div>
             <div class="flex items-center space-x-3 md:space-x-4">
-                <span class="text-gray-600 hidden sm:inline">Welcome, {{ Auth::user()->name }}</span>
+                <span class="text-gray-600 hidden sm:inline">Admin</span>
                 <div class="w-9 h-9 md:w-10 md:h-10 bg-yellow-500 rounded-full flex items-center justify-center">
-                    <span class="text-white font-bold">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</span>
+                    <span class="text-white font-bold">A</span>
                 </div>
             </div>
         </div>

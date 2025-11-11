@@ -55,7 +55,7 @@
         <div id="step1" class="space-y-4">
             <div>
                 <label for="reservation_date" class="block text-sm font-medium text-gray-700 mb-2">Reservation Date</label>
-                <input type="date" id="reservation_date" name="reservation_date" min="{{ date('Y-m-d') }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent" @isset($onCooldown) @if($onCooldown) disabled @endif @endisset>
+                <input type="date" id="reservation_date" name="reservation_date" min="{{ date('Y-m-d') }}" value="{{ old('reservation_date') ?? '' }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent" @isset($onCooldown) @if($onCooldown) disabled @endif @endisset>
                 <div id="dateStatusMessage" class="mt-2 text-sm font-medium hidden"></div>
                 <p class="text-xs text-gray-500 mt-1">Select a date to check availability.</p>
             </div>
@@ -168,11 +168,11 @@
         <div id="step3" class="space-y-4 hidden">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Preferences (optional)</label>
-                <textarea id="preferences" name="preferences" rows="3" placeholder="Special assistance if PWD, special requests, etc." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"></textarea>
+                <textarea id="preferences" name="preferences" rows="3" placeholder="Special assistance if PWD, special requests, etc." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent">{{ old('preferences') ?? '' }}</textarea>
             </div>
             <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200 text-sm">
-                <p class="mb-1"><span class="font-semibold">Note:</span> You can modify or cancel your reservation within 15 minutes after submission.</p>
-                <p>Reservations are allowed only between 8:00 AM and 5:00 PM.</p>
+                <p class="mb-1"><span class="font-semibold">Note:</span> You can cancel your reservation within 10 minutes after submission.</p>
+                <p>Reservations are allowed only between 8:00 AM and 3:00 PM.</p>
             </div>
         </div>
 
@@ -191,7 +191,7 @@
                 <label class="flex items-start">
                     <input type="checkbox" id="terms" name="terms" required class="mt-1 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500">
                     <span class="ml-2 text-sm text-gray-700">
-                        I accept the terms and conditions of reservation and understand I can modify/cancel only within 15 minutes after booking.
+                        I accept the terms and conditions of reservation.
                     </span>
                 </label>
             </div>
@@ -380,6 +380,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			populateTable(data);
             loadingState.classList.add('hidden');
             tableContainer.classList.remove('hidden');
+            
             
         } catch (e) {
             errorMessage.textContent = 'Failed to load availability data. Please try again.';
@@ -775,6 +776,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {
             console.error('Failed to load unavailable dates:', e);
         }
+        return Promise.resolve();
     }
     
     // Update date status message when date is selected

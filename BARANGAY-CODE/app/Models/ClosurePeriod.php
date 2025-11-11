@@ -30,6 +30,11 @@ class ClosurePeriod extends Model
     {
         return $query->where('status', 'active');
     }
+
+    public function reservations()
+    {
+        return $this->hasMany(Reservation::class);
+    }
 }
 
 

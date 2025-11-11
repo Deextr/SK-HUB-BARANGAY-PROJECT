@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -18,7 +19,6 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
         'first_name',
         'last_name',
         'email',
@@ -85,6 +85,40 @@ class User extends Authenticatable
      */
     public function getFullNameAttribute(): string
     {
-        return trim($this->first_name . ' ' . $this->last_name);
+        $firstName = $this->attributes['first_name'] ?? '';
+        $lastName = $this->attributes['last_name'] ?? '';
+        return trim(Str::title($firstName) . ' ' . Str::title($lastName));
+    }
+
+    /**
+     * Automatically format first_name to Proper Case when retrieved
+     */
+    public function getFirstNameAttribute($value): string
+    {
+        return $value ? Str::title(trim($value)) : '';
+    }
+
+    /**
+     * Automatically format last_name to Proper Case when retrieved
+     */
+    public function getLastNameAttribute($value): string
+    {
+        return $value ? Str::title(trim($value)) : '';
+    }
+
+    /**
+     * Automatically format first_name to Proper Case when saved
+     */
+    public function setFirstNameAttribute($value): void
+    {
+        $this->attributes['first_name'] = $value ? Str::title(trim($value)) : null;
+    }
+
+    /**
+     * Automatically format last_name to Proper Case when saved
+     */
+    public function setLastNameAttribute($value): void
+    {
+        $this->attributes['last_name'] = $value ? Str::title(trim($value)) : null;
     }
 }

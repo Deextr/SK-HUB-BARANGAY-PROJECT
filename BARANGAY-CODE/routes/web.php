@@ -124,14 +124,6 @@ Route::middleware('auth')->group(function () {
         // Add Reservation form - Wizard view (with cooldown awareness)
         Route::get('/reservation/add', [ReservationController::class, 'create'])->name('resident.reservation.add');
 
-        // Edit Reservation form
-        Route::get('/reservation/{id}/edit', [ReservationController::class, 'edit'])
-            ->name('resident.reservation.edit');
-
-        // Update Reservation
-        Route::put('/reservation/{id}', [ReservationController::class, 'update'])
-            ->name('resident.reservation.update');
-
         // Delete Reservation
         Route::delete('/reservation/{id}', [ReservationController::class, 'destroy'])
             ->name('resident.reservation.destroy');

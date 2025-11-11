@@ -404,16 +404,57 @@ class ReservationController extends Controller
         $endTime = $validated['end_time'];
         
         if ($startTime >= $endTime) {
-            abort(422, 'End time must be after start time.');
+            return back()->withErrors(['end_time' => 'End time must be after start time.'])->withInput();
+        }
+        
+        // Prevent past time selection for today's reservations
+        try {
+            $this->assertNotPastTime($validated['reservation_date'], $startTime);
+        } catch (\Exception $e) {
+            return back()->withErrors(['start_time' => $e->getMessage()])->withInput();
         }
         
         // Enforce 2-hour maximum limit
-        $this->validateTimeLimit($startTime, $endTime);
-        $this->validateBusinessHours($startTime, $endTime);
-        $this->assertSameDayCutoff($validated['reservation_date']);
-        $this->assertNotClosed($validated['reservation_date'], $startTime, $endTime);
-        $this->assertOncePerDay(Auth::id(), $validated['reservation_date']);
-        $this->assertCapacity($validated['service_id'], $validated['reservation_date'], $startTime, $endTime, 1);
+        try {
+            $this->validateTimeLimit($startTime, $endTime);
+        } catch (\Exception $e) {
+            return back()->withErrors(['end_time' => $e->getMessage()])->withInput();
+        }
+        
+        // Validate business hours
+        try {
+            $this->validateBusinessHours($startTime, $endTime);
+        } catch (\Exception $e) {
+            return back()->withErrors(['start_time' => $e->getMessage()])->withInput();
+        }
+        
+        // Same day cutoff
+        try {
+            $this->assertSameDayCutoff($validated['reservation_date']);
+        } catch (\Exception $e) {
+            return back()->withErrors(['reservation_date' => $e->getMessage()])->withInput();
+        }
+        
+        // Check for closures
+        try {
+            $this->assertNotClosed($validated['reservation_date'], $startTime, $endTime);
+        } catch (\Exception $e) {
+            return back()->withErrors(['reservation_date' => $e->getMessage()])->withInput();
+        }
+        
+        // Check once per day
+        try {
+            $this->assertOncePerDay(Auth::id(), $validated['reservation_date']);
+        } catch (\Exception $e) {
+            return back()->withErrors(['reservation_date' => $e->getMessage()])->withInput();
+        }
+        
+        // Check capacity
+        try {
+            $this->assertCapacity($validated['service_id'], $validated['reservation_date'], $startTime, $endTime, 1);
+        } catch (\Exception $e) {
+            return back()->withErrors(['service_id' => $e->getMessage()])->withInput();
+        }
 
         $reservation = Reservation::create([
             'user_id' => Auth::id(),
@@ -431,57 +472,24 @@ class ReservationController extends Controller
             ->with('status', 'Reservation submitted. Reference: '.$reservation->reference_no);
     }
 
-    public function edit($id)
-    {
-        $reservation = Reservation::where('user_id', Auth::id())->findOrFail($id);
-        $this->assertModifiable($reservation);
-        $services = Service::where('is_active', true)->orderBy('name')->get();
-        return view('resident.edit_reservation', compact('reservation', 'services'));
-    }
-
-    public function update(Request $request, $id)
-    {
-        $reservation = Reservation::where('user_id', Auth::id())->findOrFail($id);
-        $this->assertModifiable($reservation);
-
-        $validated = $request->validate([
-            'service_id' => ['required', Rule::exists('services', 'id')->where('is_active', true)],
-            'reservation_date' => ['required', 'date', 'after_or_equal:today'],
-            'start_time' => ['required', 'date_format:H:i'],
-            'end_time' => ['required', 'date_format:H:i'],
-            'preferences' => ['nullable', 'string', 'max:2000'],
-        ]);
-
-        $startTime = $validated['start_time'];
-        $endTime = $validated['end_time'];
-        
-        if ($startTime >= $endTime) {
-            abort(422, 'End time must be after start time.');
-        }
-        
-        // Enforce 2-hour maximum limit
-        $this->validateTimeLimit($startTime, $endTime);
-        $this->validateBusinessHours($startTime, $endTime);
-        $this->assertSameDayCutoff($validated['reservation_date']);
-        $this->assertNotClosed($validated['reservation_date'], $startTime, $endTime);
-        $this->assertCapacity($validated['service_id'], $validated['reservation_date'], $startTime, $endTime, 1, $reservation->id);
-
-        $reservation->update([
-            'service_id' => $validated['service_id'],
-            'reservation_date' => $validated['reservation_date'],
-            'start_time' => $startTime,
-            'end_time' => $endTime,
-            'preferences' => $validated['preferences'] ?? null,
-        ]);
-        return redirect()->route('resident.reservation')->with('status', 'Reservation updated');
-    }
-
     public function destroy($id)
     {
         $reservation = Reservation::where('user_id', Auth::id())->findOrFail($id);
-        $this->assertModifiable($reservation);
+        
+        // Check if cancellation is allowed
+        if (in_array($reservation->status, ['cancelled', 'completed'])) {
+            return redirect()->route('resident.reservation')
+                ->withErrors(['error' => 'This reservation cannot be cancelled.']);
+        }
+
+        $minutesSinceCreation = $reservation->created_at->diffInMinutes(now());
+        if ($minutesSinceCreation > 10) {
+            return redirect()->route('resident.reservation')
+                ->withErrors(['error' => 'Cancellation period has expired. You can only cancel within 10 minutes after booking.']);
+        }
+        
         $reservation->update(['status' => 'cancelled']);
-        return redirect()->route('resident.reservation')->with('status', 'Reservation cancelled');
+        return redirect()->route('resident.reservation')->with('status', 'Reservation cancelled successfully.');
     }
 
     public function ticket($id)
@@ -578,6 +586,10 @@ class ReservationController extends Controller
         $startHour = 8; // 8:00 AM
         $endHour = 16;  // 4:00 PM (latest start time for 30-min slot ending at 4:30 PM)
         
+        // Check if the selected date is today
+        $isToday = $date === now()->toDateString();
+        $currentTime = now();
+        
         // Check for partial day closures
         $closurePeriods = ClosurePeriod::active()
             ->whereDate('start_date', '<=', $date)
@@ -601,6 +613,17 @@ class ReservationController extends Controller
                     // Skip if end time exceeds business hours
                     if ($endTime > '17:00') {
                         continue;
+                    }
+                    
+                    // If booking for today, skip past time slots
+                    if ($isToday) {
+                        // Create a datetime for the start time today
+                        $slotStartDateTime = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $date . ' ' . $startTime);
+                        
+                        // Skip if this time slot is in the past
+                        if ($slotStartDateTime->lte($currentTime)) {
+                            continue;
+                        }
                     }
                     
                     // Check if this time slot conflicts with closure periods
@@ -700,6 +723,19 @@ class ReservationController extends Controller
         return [true, $until];
     }
 
+    private function assertNotPastTime(string $reservationDate, string $startTime): void
+    {
+        // If booking for today, prevent past time selection
+        if ($reservationDate === now()->toDateString()) {
+            $slotStartDateTime = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $reservationDate . ' ' . $startTime);
+            $currentTime = now();
+            
+            if ($slotStartDateTime->lte($currentTime)) {
+                abort(422, 'Cannot select past time slots. Please choose a future time.');
+            }
+        }
+    }
+
     private function assertSameDayCutoff(string $reservationDate): void
     {
         // If booking for today, only allow until 15:00 (3:00 PM)
@@ -740,14 +776,15 @@ class ReservationController extends Controller
         }
     }
 
-    private function assertModifiable(Reservation $reservation): void
+    private function assertCancellable(Reservation $reservation): void
     {
         if (in_array($reservation->status, ['cancelled', 'completed'])) {
-            abort(422, 'Reservation cannot be modified.');
+            abort(422, 'This reservation cannot be cancelled.');
         }
 
-        if ($reservation->created_at->diffInMinutes(now()) > 15) {
-            abort(422, 'You can modify or cancel only within 15 minutes of booking.');
+        $minutesSinceCreation = $reservation->created_at->diffInMinutes(now());
+        if ($minutesSinceCreation > 10) {
+            abort(422, 'Cancellation period has expired. You can only cancel within 10 minutes after booking.');
         }
     }
 

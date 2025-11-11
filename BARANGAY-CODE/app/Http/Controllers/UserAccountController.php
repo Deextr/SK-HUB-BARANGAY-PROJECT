@@ -72,7 +72,6 @@ class UserAccountController extends Controller
         User::create([
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
-            'name' => $request->first_name . ' ' . $request->last_name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'account_status' => 'pending',
@@ -149,7 +148,6 @@ class UserAccountController extends Controller
         $user->update([
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
-            'name' => $request->first_name . ' ' . $request->last_name,
             'email' => $request->email,
         ]);
 

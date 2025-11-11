@@ -23,6 +23,14 @@
         <div class="mb-4 p-3 bg-green-100 text-green-800 rounded">{{ session('status') }}</div>
     @endif
 
+    @if($errors->any())
+        <div class="mb-4 p-3 bg-red-100 text-red-800 rounded">
+            @foreach($errors->all() as $error)
+                <p>{{ $error }}</p>
+            @endforeach
+        </div>
+    @endif
+
     @if(($items ?? collect())->count() > 0)
     <table class="min-w-full border rounded-lg">
         <thead class="bg-yellow-100">
@@ -58,13 +66,22 @@
                         <a href="{{ route('resident.reservation.ticket', $res->id) }}" class="inline-flex items-center bg-gray-700 hover:bg-gray-800 text-white px-3 py-1 rounded text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600">
                             <i class="fa fa-ticket-alt mr-1"></i> Ticket
                         </a>
-                        @if($res->created_at->diffInMinutes(now()) <= 15 && !in_array($res->status, ['cancelled','completed']))
-                            <a href="{{ route('resident.reservation.edit', $res->id) }}" class="bg-blue-500 text-white px-3 py-1 rounded text-sm">Edit</a>
-                            <form action="{{ route('resident.reservation.destroy', $res->id) }}" method="POST" onsubmit="return confirm('Cancel this reservation?')" class="inline">
+                        @php
+                            $minutesSinceCreation = $res->created_at->diffInMinutes(now());
+                            $canCancel = $minutesSinceCreation <= 10 && !in_array($res->status, ['cancelled','completed']);
+                        @endphp
+                        @if($canCancel)
+                            <form action="{{ route('resident.reservation.destroy', $res->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this reservation? This action cannot be undone.')" class="inline">
                                 @csrf
                                 @method('DELETE')
-                                <button class="bg-red-500 text-white px-3 py-1 rounded text-sm">Cancel</button>
+                                <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition duration-200">
+                                    <i class="fas fa-times mr-1"></i> Cancel
+                                </button>
                             </form>
+                        @elseif(!in_array($res->status, ['cancelled','completed']) && $minutesSinceCreation > 10)
+                            <span class="text-xs text-gray-500 italic" title="Cancellation period expired (10 minutes after booking)">
+                                Cancellation expired
+                            </span>
                         @endif
                     </div>
                 </td>

@@ -12,6 +12,7 @@ class Reservation extends Model
     protected $fillable = [
         'user_id',
         'service_id',
+        'closure_period_id',
         'reference_no',
         'reservation_date',
         'start_time',
@@ -35,5 +36,10 @@ class Reservation extends Model
     public function service()
     {
         return $this->belongsTo(Service::class);
+    }
+
+    public function closurePeriod()
+    {
+        return $this->belongsTo(ClosurePeriod::class);
     }
 }

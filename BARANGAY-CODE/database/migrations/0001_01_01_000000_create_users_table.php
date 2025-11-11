@@ -13,13 +13,21 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
+            $table->string('first_name', 50);
+            $table->string('last_name', 50);
+            $table->string('email', 100)->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->boolean('is_admin')->default(false); // 👈 Admin flag
+            $table->boolean('is_admin')->default(false);
+            $table->enum('account_status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->string('id_image_path', 255)->nullable();
+            $table->text('rejection_reason')->nullable();
+            $table->timestamp('approved_at')->nullable();
+            $table->timestamp('rejected_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
+            
+            $table->index('account_status');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

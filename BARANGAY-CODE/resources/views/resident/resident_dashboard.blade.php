@@ -89,8 +89,20 @@
                         </div>
                     </div>
                     <div class="flex gap-2">
-                        <a href="{{ route('resident.reservation.edit', $upcoming->id) }}" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm">Modify</a>
                         <a href="{{ route('resident.reservation.ticket', $upcoming->id) }}" class="px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded text-sm">Ticket</a>
+                        @php
+                            $minutesSinceCreation = $upcoming->created_at->diffInMinutes(now());
+                            $canCancel = $minutesSinceCreation <= 10 && !in_array($upcoming->status, ['cancelled','completed']);
+                        @endphp
+                        @if($canCancel)
+                            <form action="{{ route('resident.reservation.destroy', $upcoming->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this reservation? This action cannot be undone.')" class="inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded text-sm">
+                                    Cancel
+                                </button>
+                            </form>
+                        @endif
                     </div>
                 </div>
             @else
