@@ -46,6 +46,12 @@
                 <i class="fas fa-calendar-check w-6 mr-3"></i>
                 My Reservations
             </a>
+            
+            <a href="{{ route('resident.settings.index') }}" 
+               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-400 {{ request()->routeIs('resident.reservation') ? 'bg-yellow-400' : '' }}">
+                <i class="fas fa-gear w-6 mr-3"></i>
+                Settings
+            </a>
 
             
         </nav>
