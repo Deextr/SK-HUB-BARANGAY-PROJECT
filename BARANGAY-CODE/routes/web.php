@@ -6,6 +6,7 @@ use App\Http\Controllers\ClosurePeriodController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserAccountController;
 use App\Http\Controllers\ArchivesController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Middleware\IsAdmin;
 use App\Http\Middleware\IsResident;
 use Illuminate\Support\Facades\Route;
@@ -133,6 +134,9 @@ Route::middleware('auth')->group(function () {
 
         // History
         Route::get('/reservation-history', [ReservationController::class, 'history'])->name('resident.reservation.history');
+
+        Route::get('/setting', [SettingsController::class, 'index'])->name('resident.settings.index');
+        Route::post('/setting/update', [SettingsController::class, 'update'])->name('resident.settings.update');
     });
 
     // Default redirect after login based on role
