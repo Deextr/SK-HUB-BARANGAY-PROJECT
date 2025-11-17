@@ -7,6 +7,26 @@
     <title>@yield('title', 'Dashboard')</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Form styling */
+        input, select, textarea {
+            border-radius: 0.375rem;
+            border: 1px solid #d1d5db;
+            padding: 0.5rem 0.75rem;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #FBBF24;
+            box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.2);
+        }
+        /* Smooth transitions */
+        .transition {
+            transition-property: all;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 150ms;
+        }
+    </style>
 </head>
 <body class="bg-gray-100">
 
@@ -54,6 +74,12 @@
                class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-400 {{ request()->routeIs('admin.user_accounts.*') ? 'bg-yellow-400' : '' }}">
                 <i class="fas fa-users w-6 mr-3"></i>
                 User Accounts
+            </a>
+
+            <a href="{{ route('admin.reports.index') }}" 
+               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-400 {{ request()->routeIs('admin.reports.*') ? 'bg-yellow-400' : '' }}">
+                <i class="fas fa-chart-bar w-6 mr-3"></i>
+                Reports
             </a>
 
             <a href="{{ route('admin.archives', ['tab' => 'services']) }}" 

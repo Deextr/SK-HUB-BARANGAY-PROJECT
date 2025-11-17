@@ -23,8 +23,17 @@ class User extends Authenticatable
         'last_name',
         'email',
         'password',
+        'birth_date',
+        'sex',
+        'is_pwd',
         'is_admin',
         'account_status',
+        'suspension_count',
+        'is_suspended',
+        'suspension_end_date',
+        'is_archived',
+        'archive_reason',
+        'archived_at',
         'id_image_path',
         'rejection_reason',
         'approved_at',
@@ -51,8 +60,14 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'birth_date' => 'date',
+            'is_pwd' => 'boolean',
+            'is_suspended' => 'boolean',
+            'is_archived' => 'boolean',
+            'suspension_end_date' => 'datetime',
             'approved_at' => 'datetime',
             'rejected_at' => 'datetime',
+            'archived_at' => 'datetime',
         ];
     }
 
@@ -120,5 +135,126 @@ class User extends Authenticatable
     public function setLastNameAttribute($value): void
     {
         $this->attributes['last_name'] = $value ? Str::title(trim($value)) : null;
+    }
+
+    /**
+     * Calculate age from birth_date (computed dynamically - 3NF compliant)
+     * Age is not stored in database to avoid redundancy
+     */
+    public function getAgeAttribute(): ?int
+    {
+        if (!$this->birth_date) {
+            return null;
+        }
+
+        // Calculate age in years from birth_date to today
+        return $this->birth_date->diffInYears(now());
+    }
+
+    /**
+     * Get formatted age string for display
+     */
+    public function getFormattedAgeAttribute(): ?string
+    {
+        $age = $this->age;
+        
+        if ($age === null) {
+            return null;
+        }
+
+        return $age . ' years old';
+    }
+
+    /**
+     * Check if user is currently suspended
+     */
+    public function isSuspended(): bool
+    {
+        // If not marked as suspended, return false
+        if (!$this->is_suspended) {
+            return false;
+        }
+
+        // If suspension has expired, update status and return false
+        if ($this->suspension_end_date && $this->suspension_end_date->isPast()) {
+            $this->update([
+                'is_suspended' => false
+            ]);
+            return false;
+        }
+
+        // User is suspended and suspension period is still active
+        return true;
+    }
+
+    /**
+     * Get remaining suspension days
+     */
+    public function getSuspensionDaysRemainingAttribute(): ?int
+    {
+        if (!$this->is_suspended || !$this->suspension_end_date) {
+            return null;
+        }
+
+        if ($this->suspension_end_date->isPast()) {
+            return 0;
+        }
+
+        return now()->diffInDays($this->suspension_end_date, false);
+    }
+
+    /**
+     * Apply suspension to user
+     */
+    public function applySuspension(int $days = 7): void
+    {
+        $this->increment('suspension_count');
+        $this->update([
+            'is_suspended' => true,
+            'suspension_end_date' => now()->addDays($days)
+        ]);
+    }
+
+    /**
+     * Remove suspension from user
+     */
+    public function removeSuspension(): void
+    {
+        $this->update([
+            'is_suspended' => false,
+            'suspension_end_date' => null
+        ]);
+    }
+        
+    /**
+     * Check if user is archived
+     */
+    public function isArchived(): bool
+    {
+        return $this->is_archived === true;
+    }
+    
+    /**
+     * Archive a user account
+     */
+    public function archive(string $reason): void
+    {
+        $this->update([
+            'is_archived' => true,
+            'archive_reason' => $reason,
+            'archived_at' => now()
+        ]);
+    }
+    
+    /**
+     * Unarchive a user account
+     */
+    public function unarchive(): void
+    {
+        $this->update([
+            'is_archived' => false,
+            'archive_reason' => null,
+            'archived_at' => null
+        ]);
     }
 }

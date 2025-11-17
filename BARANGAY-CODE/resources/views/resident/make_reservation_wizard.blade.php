@@ -164,8 +164,41 @@
         <input type="hidden" id="selected_start_time" name="start_time">
         <input type="hidden" id="selected_end_time" name="end_time">
 
-        <!-- STEP 3: Preferences -->
+        <!-- STEP 3: Reason for Reservation and Preferences -->
         <div id="step3" class="space-y-4 hidden">
+            <!-- Reason for Reservation Section -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Reason for Reservation <span class="text-red-500">*</span></label>
+                <div class="space-y-2">
+                    <div class="flex items-center">
+                        <input type="radio" id="reason_surfing" name="reservation_reason" value="Surfing" class="h-4 w-4 text-yellow-500 focus:ring-yellow-500 border-gray-300" required>
+                        <label for="reason_surfing" class="ml-2 text-sm text-gray-700">Surfing</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="radio" id="reason_reading" name="reservation_reason" value="Reading" class="h-4 w-4 text-yellow-500 focus:ring-yellow-500 border-gray-300" required>
+                        <label for="reason_reading" class="ml-2 text-sm text-gray-700">Reading</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="radio" id="reason_activity" name="reservation_reason" value="Making Activity" class="h-4 w-4 text-yellow-500 focus:ring-yellow-500 border-gray-300" required>
+                        <label for="reason_activity" class="ml-2 text-sm text-gray-700">Making Activity</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="radio" id="reason_others" name="reservation_reason" value="Others" class="h-4 w-4 text-yellow-500 focus:ring-yellow-500 border-gray-300" required>
+                        <label for="reason_others" class="ml-2 text-sm text-gray-700">Others (Please specify)</label>
+                    </div>
+                    <div id="other_reason_container" class="pl-6 hidden">
+                        <div class="relative">
+                            <input type="text" id="other_reason" name="other_reason" placeholder="Brief reason (max 20 chars)" maxlength="20" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                            <div class="absolute right-2 bottom-2 text-xs text-gray-500">
+                                <span id="char_count">0</span>/20
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1 pl-1">Maximum 20 characters</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Preferences Section -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Preferences (optional)</label>
                 <textarea id="preferences" name="preferences" rows="3" placeholder="Special assistance if PWD, special requests, etc." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent">{{ old('preferences') ?? '' }}</textarea>
@@ -176,7 +209,7 @@
             </div>
         </div>
 
-        <!-- STEP 4: Overview & Terms -->
+        <!-- STEP 4: Overview -->
         <div id="step4" class="space-y-4 hidden">
             <div class="bg-gray-50 border rounded p-4">
                 <h3 class="font-semibold mb-2">Overview</h3>
@@ -184,16 +217,14 @@
                     <div><span class="font-medium">Date:</span> <span id="ov_date">—</span></div>
                     <div><span class="font-medium">Time:</span> <span id="ov_time">—</span></div>
                     <div><span class="font-medium">Service:</span> <span id="ov_service">—</span></div>
+                    <div><span class="font-medium">Reason:</span> <span id="ov_reason">—</span></div>
                     <div><span class="font-medium">Preferences:</span> <span id="ov_prefs">—</span></div>
                 </div>
             </div>
             <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                <label class="flex items-start">
-                    <input type="checkbox" id="terms" name="terms" required class="mt-1 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500">
-                    <span class="ml-2 text-sm text-gray-700">
-                        I accept the terms and conditions of reservation.
-                    </span>
-                </label>
+                <p class="text-sm text-gray-700">
+                    <span class="font-medium">Note:</span> By proceeding with this reservation, you agree to follow all the Terms and Conditions you accepted earlier.
+                </p>
             </div>
         </div>
 
@@ -331,13 +362,25 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         if (step === 3) {
-            // No validation needed for preferences step
+            // Validate reservation reason
+            const reasonSelected = document.querySelector('input[name="reservation_reason"]:checked');
+            if (!reasonSelected) {
+                alert('Please select a reason for your reservation.');
+                return false;
+            }
+            
+            // If "Others" is selected, validate the text field
+            if (reasonSelected.value === 'Others') {
+                const otherReason = document.getElementById('other_reason').value.trim();
+                if (!otherReason) {
+                    alert('Please specify your reason for reservation.');
+                    document.getElementById('other_reason').focus();
+                    return false;
+                }
+            }
         }
         if (step === 4) {
-            if (!document.getElementById('terms').checked) { 
-                alert('Please accept the terms and conditions of reservation and confirm that you understand you can modify/cancel only within 15 minutes after booking.'); 
-                return false; 
-            }
+            // No validation needed for step 4 as terms were accepted in the initial modal
         }
         return true;
     }
@@ -346,6 +389,21 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('ov_date').textContent = dateEl.value || '—';
         document.getElementById('ov_time').textContent = selectedSlot ? selectedSlot.time_display : '—';
         document.getElementById('ov_service').textContent = selectedSlot ? selectedSlot.service_name : '—';
+        
+        // Get the selected reason
+        const reasonSelected = document.querySelector('input[name="reservation_reason"]:checked');
+        let reasonText = '—';
+        if (reasonSelected) {
+            reasonText = reasonSelected.value;
+            if (reasonSelected.value === 'Others') {
+                const otherReason = document.getElementById('other_reason').value.trim();
+                if (otherReason) {
+                    reasonText = 'Others: ' + otherReason;
+                }
+            }
+        }
+        document.getElementById('ov_reason').textContent = reasonText;
+        
         document.getElementById('ov_prefs').textContent = preferences.value || '—';
     }
 
@@ -508,7 +566,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td class="px-4 py-3 text-sm text-gray-900">${row.serviceName}</td>
                 <td class="px-4 py-3 text-sm text-gray-900">${row.availableUnits}</td>
                 <td class="px-4 py-3 text-sm">
-                    <span class="px-2 py-1 text-xs rounded-full ${row.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                    <span class="${row.isAvailable ? 'text-green-600' : 'text-red-600'}">
                         ${row.isAvailable ? 'Available' : 'Fully Booked'}
                     </span>
                 </td>
@@ -739,7 +797,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Confirm dialog before submit
     document.getElementById('reservationForm').addEventListener('submit', function(e) {
-        const msg = `Please confirm your reservation:\n\nDate: ${dateEl.value}\nTime: ${selectedSlot ? selectedSlot.time_display : '—'}\nService: ${selectedSlot ? selectedSlot.service_name : '—'}\n\nAgree to terms and submit?`;
+        // Get the selected reason
+        const reasonSelected = document.querySelector('input[name="reservation_reason"]:checked');
+        let reasonText = '—';
+        if (reasonSelected) {
+            reasonText = reasonSelected.value;
+            if (reasonSelected.value === 'Others') {
+                const otherReason = document.getElementById('other_reason').value.trim();
+                if (otherReason) {
+                    reasonText = 'Others: ' + otherReason;
+                }
+            }
+        }
+        
+        const msg = `Please confirm your reservation:\n\nDate: ${dateEl.value}\nTime: ${selectedSlot ? selectedSlot.time_display : '—'}\nService: ${selectedSlot ? selectedSlot.service_name : '—'}\nReason: ${reasonText}\n\nAgree to terms and submit?`;
         if (!confirm(msg)) {
             e.preventDefault();
         }
@@ -815,6 +886,44 @@ document.addEventListener('DOMContentLoaded', function() {
     // Listen for date changes
     dateEl.addEventListener('change', updateDateStatus);
     
+    // Event listeners for reservation reason radio buttons
+    document.querySelectorAll('input[name="reservation_reason"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const otherReasonContainer = document.getElementById('other_reason_container');
+            const otherReasonInput = document.getElementById('other_reason');
+            
+            if (this.value === 'Others') {
+                otherReasonContainer.classList.remove('hidden');
+                otherReasonInput.focus();
+            } else {
+                otherReasonContainer.classList.add('hidden');
+                // Clear the input when not selecting "Others"
+                otherReasonInput.value = '';
+                document.getElementById('char_count').textContent = '0';
+            }
+        });
+    });
+    
+    // Character counter for "Others" text field
+    const otherReasonInput = document.getElementById('other_reason');
+    const charCount = document.getElementById('char_count');
+    
+    otherReasonInput.addEventListener('input', function() {
+        const currentLength = this.value.length;
+        charCount.textContent = currentLength;
+        
+        // Visual feedback as user approaches the limit
+        if (currentLength >= 15) {
+            charCount.classList.add('text-amber-600', 'font-medium');
+            if (currentLength >= 20) {
+                charCount.classList.remove('text-amber-600');
+                charCount.classList.add('text-red-600');
+            }
+        } else {
+            charCount.classList.remove('text-amber-600', 'text-red-600', 'font-medium');
+        }
+    });
+
     // Init
     loadUnavailableDates();
     setStep(1);

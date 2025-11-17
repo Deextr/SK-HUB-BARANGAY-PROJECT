@@ -12,6 +12,7 @@
   <div class="flex items-center gap-2 border-b mb-4">
     <a href="{{ route('admin.archives', ['tab' => 'services']) }}" class="px-4 py-2 {{ request('tab','services')==='services' ? 'border-b-2 border-yellow-500 text-yellow-700' : 'text-gray-600' }}">Services</a>
     <a href="{{ route('admin.archives', ['tab' => 'closures']) }}" class="px-4 py-2 {{ request('tab')==='closures' ? 'border-b-2 border-yellow-500 text-yellow-700' : 'text-gray-600' }}">Closure Periods</a>
+    <a href="{{ route('admin.archives', ['tab' => 'users']) }}" class="px-4 py-2 {{ request('tab')==='users' ? 'border-b-2 border-yellow-500 text-yellow-700' : 'text-gray-600' }}">Archived Users</a>
   </div>
 
   @if(request('tab','services')==='services')
@@ -58,6 +59,52 @@
       {{ $services->links() }}
     </div>
     @endif
+  @elseif(request('tab')==='users')
+    @if(($users ?? collect())->count() > 0)
+    <div class="overflow-x-auto">
+      <table class="min-w-full">
+        <thead>
+          <tr class="bg-gray-100 text-left">
+            <th class="py-2 px-3">Name</th>
+            <th class="py-2 px-3">Email</th>
+            <th class="py-2 px-3">Archive Reason</th>
+            <th class="py-2 px-3">Archived Date</th>
+            <th class="py-2 px-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach($users as $user)
+          <tr class="border-b">
+            <td class="py-2 px-3">{{ $user->full_name }}</td>
+            <td class="py-2 px-3">{{ $user->email }}</td>
+            <td class="py-2 px-3">{{ $user->archive_reason ?? '—' }}</td>
+            <td class="py-2 px-3">{{ $user->archived_at ? $user->archived_at->format('M d, Y') : '—' }}</td>
+            <td class="py-2 px-3">
+              <form method="POST" action="{{ route('admin.user_accounts.unarchive', $user->id) }}" onsubmit="return confirm('Unarchive this user account?')" class="inline">
+                @csrf
+                <button type="submit" title="Unarchive User Account" class="px-2 py-2 text-green-600 hover:text-green-800 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </button>
+              </form>
+            </td>
+          </tr>
+          @endforeach
+        </tbody>
+      </table>
+    </div>
+    @else
+    <div class="text-center py-12 px-4">
+      <p class="text-gray-600">No archived user accounts.</p>
+    </div>
+    @endif
+    
+    @if(($users ?? collect())->count() > 0)
+    <div class="mt-6">
+      {{ $users->links() }}
+    </div>
+    @endif
   @else
     @if(($closures ?? collect())->count() > 0)
     <div class="overflow-x-auto">
@@ -65,7 +112,6 @@
         <thead>
           <tr class="bg-gray-100 text-left">
             <th class="py-2 px-3">Dates</th>
-            <th class="py-2 px-3">Time</th>
             <th class="py-2 px-3">Reason</th>
             <th class="py-2 px-3">Status</th>
             <th class="py-2 px-3">Actions</th>
@@ -74,8 +120,10 @@
         <tbody>
           @foreach($closures as $p)
           <tr class="border-b">
-            <td class="py-2 px-3">{{ $p->start_date->format('M d, Y') }} – {{ $p->end_date->format('M d, Y') }}</td>
-            <td class="py-2 px-3">{{ $p->is_full_day ? 'Full day' : ($p->start_time.' - '.$p->end_time) }}</td>
+            <td class="py-2 px-3">
+              <div>{{ $p->start_date->format('M d, Y') }} – {{ $p->end_date->format('M d, Y') }}</div>
+              <div class="text-xs text-gray-500">Full day</div>
+            </td>
             <td class="py-2 px-3">{{ $p->reason ?? '—' }}</td>
             <td class="py-2 px-3">{{ ucfirst($p->status) }}</td>
             <td class="py-2 px-3">

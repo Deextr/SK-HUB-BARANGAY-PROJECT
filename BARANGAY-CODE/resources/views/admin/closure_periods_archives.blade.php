@@ -23,7 +23,6 @@
       <thead>
         <tr class="bg-gray-100 text-left">
           <th class="py-2 px-3">Dates</th>
-          <th class="py-2 px-3">Time</th>
           <th class="py-2 px-3">Reason</th>
           <th class="py-2 px-3">Status</th>
           <th class="py-2 px-3">Actions</th>
@@ -32,8 +31,10 @@
       <tbody>
         @forelse($items as $p)
         <tr class="border-b">
-          <td class="py-2 px-3">{{ $p->start_date->format('M d, Y') }} – {{ $p->end_date->format('M d, Y') }}</td>
-          <td class="py-2 px-3">{{ $p->is_full_day ? 'Full day' : ($p->start_time.' - '.$p->end_time) }}</td>
+          <td class="py-2 px-3">
+            <div>{{ $p->start_date->format('M d, Y') }} – {{ $p->end_date->format('M d, Y') }}</div>
+            <div class="text-xs text-gray-500">Full day</div>
+          </td>
           <td class="py-2 px-3">{{ $p->reason ?? '—' }}</td>
           <td class="py-2 px-3">{{ ucfirst($p->status) }}</td>
           <td class="py-2 px-3">

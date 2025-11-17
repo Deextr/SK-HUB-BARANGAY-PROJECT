@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\ClosurePeriodController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserAccountController;
 use App\Http\Controllers\ArchivesController;
+use App\Http\Controllers\ReportsController;
 use App\Http\Middleware\IsAdmin;
 use App\Http\Middleware\IsResident;
 use Illuminate\Support\Facades\Route;
@@ -17,8 +19,11 @@ Route::get('/', function () {
 
 // Guest routes
 Route::middleware('guest')->group(function () {
+    Route::get('/register/nda', [AuthController::class, 'showNdaForm'])->name('register.nda');
+    Route::post('/register/nda/accept', [AuthController::class, 'acceptNda'])->name('register.nda.accept');
     Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register.form');
     Route::post('/register', [AuthController::class, 'register'])->name('register');
+    Route::post('/check-email', [AuthController::class, 'checkEmailExists'])->name('check.email');
 
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login.form');
     Route::post('/login', [AuthController::class, 'login'])->name('login');
@@ -39,9 +44,7 @@ Route::middleware('auth')->group(function () {
 
     // ✅ Admin-only routes
     Route::middleware(IsAdmin::class)->prefix('admin')->group(function () {
-        Route::get('/dashboard', function () {
-            return view('admin.admin_dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         Route::get('/reservations', [ReservationController::class, 'index'])
             ->name('reservation.dashboard');
@@ -89,6 +92,8 @@ Route::middleware('auth')->group(function () {
         // User Account Status Management
         Route::post('/user-accounts/{user}/approve', [UserAccountController::class, 'approve'])->name('admin.user_accounts.approve');
         Route::post('/user-accounts/{user}/reject', [UserAccountController::class, 'reject'])->name('admin.user_accounts.reject');
+        Route::post('/user-accounts/{user}/archive', [UserAccountController::class, 'archive'])->name('admin.user_accounts.archive');
+        Route::post('/user-accounts/{user}/unarchive', [UserAccountController::class, 'unarchive'])->name('admin.user_accounts.unarchive');
         Route::get('/user-accounts/filter/pending', [UserAccountController::class, 'pending'])->name('admin.user_accounts.pending');
         Route::get('/user-accounts/filter/approved', [UserAccountController::class, 'approved'])->name('admin.user_accounts.approved');
         Route::get('/user-accounts/filter/rejected', [UserAccountController::class, 'rejected'])->name('admin.user_accounts.rejected');
@@ -96,6 +101,10 @@ Route::middleware('auth')->group(function () {
         // Legacy users route for backward compatibility
         Route::get('/users', [UserAccountController::class, 'index'])->name('admin.users');
 
+        // Reports
+        Route::get('/reports', [ReportsController::class, 'index'])->name('admin.reports.index');
+        Route::get('/reports/export/csv', [ReportsController::class, 'exportCsv'])->name('admin.reports.export.csv');
+        Route::get('/reports/export/pdf', [ReportsController::class, 'exportPdf'])->name('admin.reports.export.pdf');
         
     });
 
@@ -121,6 +130,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/reservation', [ReservationController::class, 'store'])
             ->name('resident.reservation.store');
 
+        // Terms and Conditions page before reservation
+        Route::get('/reservation/terms', [ReservationController::class, 'showTerms'])->name('resident.reservation.terms');
+        Route::post('/reservation/terms', [ReservationController::class, 'acceptTerms'])->name('resident.reservation.accept_terms');
+        
         // Add Reservation form - Wizard view (with cooldown awareness)
         Route::get('/reservation/add', [ReservationController::class, 'create'])->name('resident.reservation.add');
 

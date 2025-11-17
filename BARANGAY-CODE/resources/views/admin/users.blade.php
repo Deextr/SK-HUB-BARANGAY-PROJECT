@@ -61,7 +61,7 @@
 
                 <!-- Action Buttons -->
                 <div class="flex gap-2 pt-2">
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    <button type="submit" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition font-medium">
                         Apply Filters
                     </button>
                     <a href="{{ route('admin.user_accounts.index') }}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition border border-gray-300">
@@ -72,16 +72,17 @@
         </div>
     </div>
 
-    <!-- Filter Tabs -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+    <!-- Combined Filter Tabs and Accounts Table -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <!-- Filter Tabs -->
         <div class="border-b border-gray-200">
             <nav class="flex space-x-8 px-6" aria-label="Tabs">
                 <a href="{{ route('admin.user_accounts.index') }}" 
-                   class="py-4 px-1 border-b-2 font-medium text-sm {{ request()->routeIs('admin.user_accounts.index') ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                   class="py-4 px-1 border-b-2 font-medium text-sm {{ request()->routeIs('admin.user_accounts.index') ? 'border-yellow-500 text-yellow-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
                     <i class="fas fa-list mr-2"></i>All Accounts
                 </a>
                 <a href="{{ route('admin.user_accounts.pending') }}" 
-                   class="py-4 px-1 border-b-2 font-medium text-sm {{ request()->routeIs('admin.user_accounts.pending') ? 'border-yellow-500 text-yellow-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                   class="py-4 px-1 border-b-2 font-medium text-sm {{ request()->routeIs('admin.user_accounts.pending') ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
                     <i class="fas fa-clock mr-2"></i>Pending Review
                 </a>
                 <a href="{{ route('admin.user_accounts.approved') }}" 
@@ -94,24 +95,20 @@
                 </a>
             </nav>
         </div>
-    </div>
-
-    <!-- Success Message -->
-    @if(session('success'))
-        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <i class="fas fa-check-circle text-green-400"></i>
-                </div>
-                <div class="ml-3">
-                    <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
+        
+        <!-- Success Message -->
+        @if(session('success'))
+            <div class="bg-green-50 border-b border-green-200 p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-check-circle text-green-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
+                    </div>
                 </div>
             </div>
-        </div>
-    @endif
-
-    <!-- Accounts Table -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        @endif
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
@@ -159,18 +156,14 @@
 
                         <!-- Status -->
                         <td class="px-6 py-4 whitespace-nowrap">
-                            @if($user->account_status === 'pending')
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                    Pending
-                                </span>
+                            @if($user->is_archived)
+                                <span class="text-amber-600 font-medium">Archived</span>
+                            @elseif($user->account_status === 'pending')
+                                <span class="text-amber-600 font-medium">Pending</span>
                             @elseif($user->account_status === 'approved')
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    Approved
-                                </span>
+                                <span class="text-green-600 font-medium">Approved</span>
                             @else
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                    Rejected
-                                </span>
+                                <span class="text-red-600 font-medium">Rejected</span>
                             @endif
                         </td>
 
@@ -185,6 +178,15 @@
                         <!-- Actions -->
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex items-center space-x-2">
+                                <button onclick="showViewModal({{ $user->id }})" 
+                                        title="View Account"
+                                        class="px-2 py-2 text-blue-600 hover:text-blue-800 font-medium">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                </button>
+                                
                                 @if($user->account_status === 'pending')
                                     <form action="{{ route('admin.user_accounts.approve', $user) }}" method="POST" class="inline">
                                         @csrf
@@ -207,14 +209,15 @@
                                     </button>
                                 @endif
                                 
-                                <button onclick="showViewModal({{ $user->id }})" 
-                                        title="View Account"
-                                        class="px-2 py-2 text-blue-600 hover:text-blue-800 font-medium">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                    </svg>
-                                </button>
+                                @if($user->account_status === 'approved' && !$user->is_archived)
+                                    <button onclick="showArchiveModal({{ $user->id }}, '{{ $user->full_name }}')" 
+                                            title="Archive Account"
+                                            class="px-2 py-2 text-amber-600 hover:text-amber-800 font-medium">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+                                        </svg>
+                                    </button>
+                                @endif
                             </div>
                 </td>
             </tr>
@@ -232,14 +235,13 @@
         </tbody>
     </table>
 </div>
+        <!-- Pagination -->
+        @if(($users ?? collect())->count() > 0)
+        <div class="px-6 py-4 border-t border-gray-200">
+            {{ $users->links() }}
+        </div>
+        @endif
     </div>
-
-    <!-- Pagination -->
-    @if(($users ?? collect())->count() > 0)
-    <div class="mt-6">
-        {{ $users->links() }}
-    </div>
-    @endif
 </div>
 
 <!-- Enhanced Reject Modal -->
@@ -280,6 +282,51 @@
                             class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-150">
                         <i class="fas fa-times mr-1"></i>
                         Reject Account
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Archive Modal -->
+<div id="archiveModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full transform transition-all">
+            <form id="archiveForm" method="POST">
+                @csrf
+                <div class="p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-archive text-amber-500 text-xl"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-lg font-semibold text-gray-900">Archive Account</h3>
+                            <p class="text-sm text-gray-500">Please provide a reason for archiving this account</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="archive_reason" class="block text-sm font-medium text-gray-700 mb-2">
+                            Archive Reason <span class="text-red-500">*</span>
+                        </label>
+                        <textarea id="archive_reason" name="archive_reason" rows="4" 
+                                  class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                                  placeholder="Please provide a detailed reason for archiving this account..."
+                                  required></textarea>
+                        <p class="mt-1 text-xs text-gray-500">This reason will be shown to the user when they try to login.</p>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 px-6 py-3 flex justify-end space-x-3">
+                    <button type="button" onclick="hideArchiveModal()" 
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-150">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 text-sm font-medium text-white bg-amber-600 border border-transparent rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors duration-150">
+                        <i class="fas fa-archive mr-1"></i>
+                        Archive Account
                     </button>
                 </div>
             </form>
@@ -333,6 +380,26 @@
                             </div>
 
                             <div>
+                                <label class="block text-sm font-medium text-gray-700">Birth Date</label>
+                                <p id="view_birth_date" class="mt-1 text-sm text-gray-900">-</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Age</label>
+                                <p id="view_age" class="mt-1 text-sm text-gray-900 font-medium">-</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Sex</label>
+                                <p id="view_sex" class="mt-1 text-sm text-gray-900">-</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">PWD Status</label>
+                                <p id="view_is_pwd" class="mt-1 text-sm text-gray-900">-</p>
+                            </div>
+
+                            <div>
                                 <label class="block text-sm font-medium text-gray-700">Account Status</label>
                                 <div id="view_status" class="mt-1">-</div>
                             </div>
@@ -355,6 +422,21 @@
                             <div id="view_rejection_reason_section" class="hidden">
                                 <label class="block text-sm font-medium text-gray-700">Rejection Reason</label>
                                 <p id="view_rejection_reason" class="mt-1 text-sm text-gray-900 bg-red-50 p-3 rounded">-</p>
+                            </div>
+                            
+                            <div id="view_archived_section" class="hidden">
+                                <label class="block text-sm font-medium text-gray-700">Archive Status</label>
+                                <p id="view_archived_status" class="mt-1 text-sm font-medium text-amber-600">Archived</p>
+                            </div>
+                            
+                            <div id="view_archived_date_section" class="hidden">
+                                <label class="block text-sm font-medium text-gray-700">Archived Date</label>
+                                <p id="view_archived_at" class="mt-1 text-sm text-gray-900">-</p>
+                            </div>
+                            
+                            <div id="view_archive_reason_section" class="hidden">
+                                <label class="block text-sm font-medium text-gray-700">Archive Reason</label>
+                                <p id="view_archive_reason" class="mt-1 text-sm text-gray-900 bg-amber-50 p-3 rounded">-</p>
                             </div>
                         </div>
                     </div>
@@ -441,16 +523,20 @@ function showViewModal(userId) {
             document.getElementById('view_id').textContent = data.id || '-';
             document.getElementById('view_full_name').textContent = data.full_name || '-';
             document.getElementById('view_email').textContent = data.email || '-';
+            document.getElementById('view_birth_date').textContent = data.birth_date || 'N/A';
+            document.getElementById('view_age').textContent = data.age ? data.age : 'N/A';
+            document.getElementById('view_sex').textContent = data.sex || 'N/A';
+            document.getElementById('view_is_pwd').textContent = data.is_pwd ? 'Yes' : 'No';
             document.getElementById('view_created_at').textContent = data.created_at || 'N/A';
             
-            // Status badge
+            // Status text
             let statusHtml = '';
             if (data.account_status === 'pending') {
-                statusHtml = '<span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">Pending Approval</span>';
+                statusHtml = '<span class="text-amber-600 font-medium">Pending Approval</span>';
             } else if (data.account_status === 'approved') {
-                statusHtml = '<span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">Approved</span>';
+                statusHtml = '<span class="text-green-600 font-medium">Approved</span>';
             } else {
-                statusHtml = '<span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">Rejected</span>';
+                statusHtml = '<span class="text-red-600 font-medium">Rejected</span>';
             }
             document.getElementById('view_status').innerHTML = statusHtml;
             
@@ -476,6 +562,31 @@ function showViewModal(userId) {
                 document.getElementById('view_rejection_reason').textContent = data.rejection_reason;
             } else {
                 document.getElementById('view_rejection_reason_section').classList.add('hidden');
+            }
+            
+            // Archive status
+            if (data.is_archived) {
+                document.getElementById('view_archived_section').classList.remove('hidden');
+                
+                // Archive date
+                if (data.archived_at) {
+                    document.getElementById('view_archived_date_section').classList.remove('hidden');
+                    document.getElementById('view_archived_at').textContent = data.archived_at;
+                } else {
+                    document.getElementById('view_archived_date_section').classList.add('hidden');
+                }
+                
+                // Archive reason
+                if (data.archive_reason) {
+                    document.getElementById('view_archive_reason_section').classList.remove('hidden');
+                    document.getElementById('view_archive_reason').textContent = data.archive_reason;
+                } else {
+                    document.getElementById('view_archive_reason_section').classList.add('hidden');
+                }
+            } else {
+                document.getElementById('view_archived_section').classList.add('hidden');
+                document.getElementById('view_archived_date_section').classList.add('hidden');
+                document.getElementById('view_archive_reason_section').classList.add('hidden');
             }
             
             // ID Image
@@ -517,10 +628,28 @@ function hideRejectModal() {
     document.body.style.overflow = 'auto'; // Restore scrolling
 }
 
+function showArchiveModal(userId, userName) {
+    document.getElementById('archiveForm').action = `/admin/user-accounts/${userId}/archive`;
+    document.getElementById('archiveModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+}
+
+function hideArchiveModal() {
+    document.getElementById('archiveModal').classList.add('hidden');
+    document.getElementById('archive_reason').value = '';
+    document.body.style.overflow = 'auto'; // Restore scrolling
+}
+
 // Close modals when clicking outside
 document.getElementById('rejectModal').addEventListener('click', function(e) {
     if (e.target === this) {
         hideRejectModal();
+    }
+});
+
+document.getElementById('archiveModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        hideArchiveModal();
     }
 });
 
@@ -540,6 +669,7 @@ document.getElementById('imageModal').addEventListener('click', function(e) {
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         hideRejectModal();
+        hideArchiveModal();
         hideViewModal();
         hideImageModal();
     }

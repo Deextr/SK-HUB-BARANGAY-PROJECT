@@ -12,9 +12,40 @@ use Illuminate\Validation\ValidationException;
 
 class ReservationController extends Controller
 {
+    public function showTerms()
+    {
+        return view('resident.reservation_terms');
+    }
+    
+    public function acceptTerms(Request $request)
+    {
+        $request->validate([
+            'accept_terms' => ['required', 'accepted'],
+        ]);
+        
+        // Set session variable to indicate terms were accepted
+        session(['terms_accepted' => true]);
+        
+        return redirect()->route('resident.reservation.add');
+    }
+    
     public function create()
     {
-        $userId = Auth::id();
+        // Check if the user has accepted the terms and conditions
+        if (!session('terms_accepted')) {
+            return redirect()->route('resident.reservation.terms');
+        }
+        
+        $user = Auth::user();
+        
+        // Check if user is suspended
+        if ($user->isSuspended()) {
+            $daysRemaining = $user->suspension_days_remaining;
+            $message = "Your account is suspended for $daysRemaining days due to 3 no-show or cancellation violations. You cannot make reservations until the suspension period ends.";
+            return redirect()->route('resident.dashboard')->withErrors(['suspension' => $message]);
+        }
+        
+        $userId = $user->id;
         [$onCooldown, $cooldownUntil] = $this->cooldownState($userId);
         return view('resident.make_reservation_wizard', compact('onCooldown', 'cooldownUntil'));
     }
@@ -65,45 +96,80 @@ class ReservationController extends Controller
 
     public function index(Request $request)
     {
-        $sort = $request->get('sort', 'id');
-        $direction = $request->get('direction', 'desc');
+        $requestedSort = $request->get('sort', 'reservation_date');
+        $direction = strtolower($request->get('direction', 'desc'));
+        $direction = in_array($direction, ['asc', 'desc'], true) ? $direction : 'desc';
+        $tab = $request->get('tab', 'all'); // Default to 'all' tab
 
         $sortable = [
             'id' => 'reservations.id',
             'reference_no' => 'reservations.reference_no',
-            'resident' => 'users.name',
             'service' => 'services.name',
             'reservation_date' => 'reservations.reservation_date',
             'start_time' => 'reservations.start_time',
             'end_time' => 'reservations.end_time',
             'status' => 'reservations.status',
         ];
-        $orderBy = $sortable[$sort] ?? 'reservations.reservation_date';
 
         $reservations = Reservation::query()
             ->leftJoin('users', 'users.id', '=', 'reservations.user_id')
             ->leftJoin('services', 'services.id', '=', 'reservations.service_id')
             ->select('reservations.*')
+            ->selectRaw("TRIM(CONCAT(COALESCE(users.first_name, ''), ' ', COALESCE(users.last_name, ''))) AS resident_name")
             ->with(['user', 'service'])
+            ->when($tab === 'today', function($query) {
+                // Filter for today's reservations
+                return $query->whereDate('reservations.reservation_date', now()->toDateString());
+            })
             ->when($request->filled('q'), function ($q) use ($request) {
-                $term = $request->get('q');
-                $q->where(function($w) use ($term) {
-                    $w->where('reservations.reference_no', 'like', "%$term%")
-                      ->orWhere('reservations.status', 'like', "%$term%")
-                      ->orWhere('reservations.id', $term)
-                      ->orWhere('users.name', 'like', "%$term%")
-                      ->orWhere('services.name', 'like', "%$term%")
-                      ->orWhereDate('reservations.reservation_date', $term)
-                      ->orWhere('reservations.start_time', 'like', "%$term%")
-                      ->orWhere('reservations.end_time', 'like', "%$term%");
+                $term = trim($request->get('q'));
+                $like = "%{$term}%";
+                $isDate = preg_match('/^\d{4}-\d{2}-\d{2}$/', $term) === 1;
+                $q->where(function($w) use ($like, $term, $isDate) {
+                    $w->where('reservations.reference_no', 'like', $like)
+                      ->orWhere('reservations.status', 'like', $like)
+                      ->orWhere('reservations.start_time', 'like', $like)
+                      ->orWhere('reservations.end_time', 'like', $like)
+                      ->orWhere('services.name', 'like', $like)
+                      ->orWhereRaw("TRIM(CONCAT(COALESCE(users.first_name, ''), ' ', COALESCE(users.last_name, ''))) LIKE ?", [$like]);
+
+                    if (ctype_digit($term)) {
+                        $w->orWhere('reservations.id', (int) $term);
+                    }
+
+                    if ($isDate) {
+                        $w->orWhereDate('reservations.reservation_date', $term);
+                    }
                 });
             })
-            ->when($request->filled('date'), fn($q) => $q->whereDate('reservations.reservation_date', $request->date))
-            ->orderBy($orderBy, $direction)
+            ->when($request->filled('date'), fn($q) => $q->whereDate('reservations.reservation_date', $request->date));
+
+        if ($requestedSort === 'resident') {
+            $reservations->orderBy('resident_name', $direction);
+        } elseif (array_key_exists($requestedSort, $sortable)) {
+            $reservations->orderBy($sortable[$requestedSort], $direction);
+        } else {
+            $reservations->orderBy('reservations.reservation_date', 'desc');
+        }
+
+        if ($requestedSort !== 'id') {
+            $reservations->orderBy('reservations.id', 'desc');
+        }
+
+        $reservations = $reservations
             ->paginate(6)
             ->withQueryString();
 
-        return view('admin.reservation', compact('reservations'));
+        // Get count of today's reservations for tab badge
+        $todayCount = Reservation::whereDate('reservation_date', now()->toDateString())->count();
+
+        return view('admin.reservation', [
+            'reservations' => $reservations,
+            'sort' => $requestedSort,
+            'direction' => $direction,
+            'tab' => $tab,
+            'todayCount' => $todayCount,
+        ]);
     }
 
     public function residentAvailable(Request $request)
@@ -251,10 +317,8 @@ class ReservationController extends Controller
         $closedDates = [];
         $fullyBookedDates = [];
 
-        // Get all active full-day closure periods
-        $closurePeriods = ClosurePeriod::where('is_full_day', true)
-            ->where('status', 'active')
-            ->get();
+        // Get all active closure periods
+        $closurePeriods = ClosurePeriod::active()->get();
 
         // Process closure periods and expand date ranges
         foreach ($closurePeriods as $period) {
@@ -346,7 +410,6 @@ class ReservationController extends Controller
         $isClosed = ClosurePeriod::active()
             ->whereDate('start_date', '<=', $date)
             ->whereDate('end_date', '>=', $date)
-            ->where('is_full_day', true)
             ->exists();
 
         if ($isClosed) {
@@ -389,15 +452,25 @@ class ReservationController extends Controller
 
     public function store(Request $request)
     {
+        $user = Auth::user();
+        
+        // Check if user is suspended
+        if ($user->isSuspended()) {
+            $daysRemaining = $user->suspension_days_remaining;
+            $message = "Your account is suspended for $daysRemaining days due to 3 no-show or cancellation violations. You cannot make reservations until the suspension period ends.";
+            return redirect()->route('resident.dashboard')->withErrors(['suspension' => $message]);
+        }
+        
         // Enforce per-day cooldown (resets at midnight): only one booking can be created per calendar day
-        $this->assertCooldown(Auth::id());
+        $this->assertCooldown($user->id);
         $validated = $request->validate([
             'service_id' => ['required', Rule::exists('services', 'id')->where('is_active', true)],
             'reservation_date' => ['required', 'date', 'after_or_equal:today'],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i'],
             'preferences' => ['nullable', 'string', 'max:2000'],
-            'terms' => ['accepted'],
+            'reservation_reason' => ['required', 'string', 'in:Surfing,Reading,Making Activity,Others'],
+            'other_reason' => ['nullable', 'required_if:reservation_reason,Others', 'string', 'max:20'],
         ]);
 
         $startTime = $validated['start_time'];
@@ -465,6 +538,8 @@ class ReservationController extends Controller
             'end_time' => $endTime,
             'units_reserved' => 1,
             'preferences' => $request->get('preferences'),
+            'reservation_reason' => $validated['reservation_reason'],
+            'other_reason' => $validated['reservation_reason'] === 'Others' ? $validated['other_reason'] : null,
             'status' => 'pending',
         ]);
 
@@ -543,9 +618,9 @@ class ReservationController extends Controller
         return back()->with('status', $validated['action'] === 'submit' ? 'Reservation completed' : 'Draft saved');
     }
 
-    public function adminCancel($id)
+    public function adminCancel(Request $request, $id)
     {
-        $reservation = Reservation::findOrFail($id);
+        $reservation = Reservation::with('user')->findOrFail($id);
         
         // Check if reservation can be cancelled (not already cancelled or completed)
         if ($reservation->status === 'cancelled') {
@@ -556,10 +631,33 @@ class ReservationController extends Controller
             return back()->withErrors(['error' => 'Cannot cancel a completed reservation.']);
         }
         
-        $reservation->update(['status' => 'cancelled']);
+        // Validate the cancellation reason
+        $validated = $request->validate([
+            'cancellation_reason' => ['required', 'string', 'min:3', 'max:255'],
+            'apply_suspension' => ['nullable', 'boolean'],
+        ]);
+        
+        $applySuspension = $request->has('apply_suspension');
+        
+        // Use the model method to cancel with reason and optional suspension
+        $reservation->cancelWithReason(
+            $validated['cancellation_reason'],
+            $applySuspension
+        );
+        
+        $message = "Reservation #{$reservation->reference_no} has been cancelled.";
+        
+        // Add suspension info to the message if applicable
+        if ($applySuspension && $reservation->user) {
+            if ($reservation->user->is_suspended) {
+                $message .= " The resident has been suspended for 7 days due to multiple violations.";
+            } else {
+                $message .= " A suspension warning has been applied to the resident's account.";
+            }
+        }
         
         return redirect()->route('reservation.dashboard')
-            ->with('status', "Reservation #{$reservation->reference_no} has been cancelled.");
+            ->with('status', $message);
     }
 
     private function validateBusinessHours(string $start, string $end): void
@@ -590,13 +688,6 @@ class ReservationController extends Controller
         $isToday = $date === now()->toDateString();
         $currentTime = now();
         
-        // Check for partial day closures
-        $closurePeriods = ClosurePeriod::active()
-            ->whereDate('start_date', '<=', $date)
-            ->whereDate('end_date', '>=', $date)
-            ->where('is_full_day', false)
-            ->get();
-
         // Valid durations in hours: 0.5 (30 mins), 1, 1.5, 2
         $durations = [0.5, 1, 1.5, 2];
 
@@ -626,37 +717,22 @@ class ReservationController extends Controller
                         }
                     }
                     
-                    // Check if this time slot conflicts with closure periods
-                    $isBlocked = false;
-                    foreach ($closurePeriods as $closure) {
-                        $closureStart = $closure->start_time ?? '00:00';
-                        $closureEnd = $closure->end_time ?? '23:59';
-                        
-                        // Check if time slot overlaps with closure period
-                        if (!($endTime <= $closureStart || $startTime >= $closureEnd)) {
-                            $isBlocked = true;
-                            break;
-                        }
-                    }
+                    // Calculate duration in minutes for display and sorting
+                    $durationMinutes = (int)($durationHours * 60);
                     
-                    if (!$isBlocked) {
-                        // Calculate duration in minutes for display and sorting
-                        $durationMinutes = (int)($durationHours * 60);
-                        
-                        // Format duration display
-                        $durationDisplay = $durationMinutes == 30 ? '30 mins' : 
-                                          ($durationMinutes == 60 ? '1 hour' : 
-                                          ($durationMinutes == 90 ? '1.5 hours' : '2 hours'));
-                        
-                        $timeSlots[] = [
-                            'start_time' => $startTime,
-                            'end_time' => $endTime,
-                            'duration_hours' => $durationHours,
-                            'duration_minutes' => $durationMinutes,
-                            'duration_display' => $durationDisplay,
-                            'display' => date('g:i A', strtotime($startTime)) . ' - ' . date('g:i A', strtotime($endTime)) . ' (' . $durationDisplay . ')'
-                        ];
-                    }
+                    // Format duration display
+                    $durationDisplay = $durationMinutes == 30 ? '30 mins' : 
+                                      ($durationMinutes == 60 ? '1 hour' : 
+                                      ($durationMinutes == 90 ? '1.5 hours' : '2 hours'));
+                    
+                    $timeSlots[] = [
+                        'start_time' => $startTime,
+                        'end_time' => $endTime,
+                        'duration_hours' => $durationHours,
+                        'duration_minutes' => $durationMinutes,
+                        'duration_display' => $durationDisplay,
+                        'display' => date('g:i A', strtotime($startTime)) . ' - ' . date('g:i A', strtotime($endTime)) . ' (' . $durationDisplay . ')'
+                    ];
                 }
             }
         }
@@ -804,17 +880,8 @@ class ReservationController extends Controller
             ->whereDate('end_date', '>=', $date)
             ->get();
 
-        foreach ($periods as $p) {
-            if ($p->is_full_day) {
-                abort(422, 'The selected date is closed.');
-            }
-            $pStart = $p->start_time ?? '00:00';
-            $pEnd = $p->end_time ?? '23:59';
-            // If time overlaps with a partial-day closure
-            $overlap = !($end <= $pStart || $start >= $pEnd);
-            if ($overlap) {
-                abort(422, 'The selected time falls within a closure period.');
-            }
+        if ($periods->isNotEmpty()) {
+            abort(422, 'The selected date is closed.');
         }
     }
 }

@@ -12,6 +12,14 @@
         <div class="mb-2"><span class="font-semibold">Date:</span> {{ $reservation->reservation_date->format('M j, Y') }}</div>
         <div class="mb-2"><span class="font-semibold">Time:</span> {{ \Carbon\Carbon::parse($reservation->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($reservation->end_time)->format('g:i A') }}</div>
         <div class="mb-2"><span class="font-semibold">Status:</span> {{ ucfirst($reservation->status) }}</div>
+        @if($reservation->reservation_reason)
+            <div class="mb-2"><span class="font-semibold">Reason:</span> 
+                {{ $reservation->reservation_reason }}
+                @if($reservation->reservation_reason === 'Others' && $reservation->other_reason)
+                    ({{ $reservation->other_reason }})
+                @endif
+            </div>
+        @endif
         @if($reservation->preferences)
             <div class="mb-2"><span class="font-semibold">Preferences:</span> {{ $reservation->preferences }}</div>
         @endif
@@ -19,8 +27,8 @@
 
     <div class="mt-4 flex gap-2 no-print">
         <a href="{{ route('resident.reservation') }}" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">Back</a>
-        <button onclick="window.print()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Print</button>
-        <button onclick="exportToImage()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Export to Image</button>
+        <button onclick="window.print()" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 font-medium">Print</button>
+        <button onclick="exportToImage()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-medium">Export to Image</button>
     </div>
 </div>
 

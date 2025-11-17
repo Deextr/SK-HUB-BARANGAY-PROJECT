@@ -16,7 +16,7 @@
             <option value="asc" {{ ($direction ?? request('direction'))=='asc'?'selected':'' }}>Asc</option>
             <option value="desc" {{ ($direction ?? request('direction'))=='desc'?'selected':'' }}>Desc</option>
         </select>
-        <button class="bg-blue-600 text-white px-4 py-2 rounded">Apply</button>
+        <button class="bg-yellow-500 text-white px-4 py-2 rounded font-medium hover:bg-yellow-600">Apply</button>
     </form>
 
     @if(session('status'))
@@ -52,13 +52,13 @@
                 <td class="py-3 px-4 border">{{ $res->service->name }}</td>
                 <td class="py-3 px-4 border">
                     @if($res->status === 'cancelled')
-                        <span class="text-red-600 font-semibold">Cancelled</span>
+                        <span class="text-red-600 font-medium">Cancelled</span>
                     @elseif($res->status === 'completed')
-                        <span class="text-green-600 font-semibold">Completed</span>
+                        <span class="text-green-600 font-medium">Completed</span>
                     @elseif($res->status === 'pending')
-                        <span class="text-yellow-600 font-semibold">Pending</span>
+                        <span class="text-amber-600 font-medium">Pending</span>
                     @else
-                        <span class="text-green-600 font-semibold">{{ ucfirst($res->status) }}</span>
+                        <span class="text-green-600 font-medium">{{ ucfirst($res->status) }}</span>
                     @endif
                 </td>
                 <td class="py-3 px-4 border">

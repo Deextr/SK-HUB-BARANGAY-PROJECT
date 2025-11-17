@@ -27,7 +27,7 @@
         </div>
 
         <div class="flex space-x-4">
-            <button type="submit" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-400 transition">
+            <button type="submit" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition font-medium">
                 Save Settings
             </button>
             <a href="{{ route('dashboard') }}" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 transition">

@@ -18,109 +18,155 @@
     </div>
 @endif
 
-<div class="bg-white rounded shadow p-4 mb-6">
-    <div class="flex flex-col gap-3">
-        <form method="GET" class="flex gap-2 items-center flex-wrap">
-            <input type="text" name="q" value="{{ request('q') }}" placeholder="Search reason/status/date" class="border rounded px-3 py-2" />
-            <select name="sort" class="border rounded px-3 py-2">
-                <option value="start_date" {{ ($sort ?? request('sort'))=='start_date'?'selected':'' }}>Start Date</option>
-                <option value="end_date" {{ ($sort ?? request('sort'))=='end_date'?'selected':'' }}>End Date</option>
-                <option value="status" {{ ($sort ?? request('sort'))=='status'?'selected':'' }}>Status</option>
-                <option value="reason" {{ ($sort ?? request('sort'))=='reason'?'selected':'' }}>Reason</option>
-                <option value="created_at" {{ ($sort ?? request('sort'))=='created_at'?'selected':'' }}>Created</option>
-            </select>
-            <select name="direction" class="border rounded px-3 py-2">
-                <option value="asc" {{ ($direction ?? request('direction'))=='asc'?'selected':'' }}>Asc</option>
-                <option value="desc" {{ ($direction ?? request('direction'))=='desc'?'selected':'' }}>Desc</option>
-            </select>
-            <button class="bg-gray-700 text-white px-4 py-2 rounded">Apply</button>
-        </form>
-        <div>
-            <button id="btnOpenCreate" class="bg-blue-600 text-white px-4 py-2 rounded">+ Closure Period</button>
+<!-- Filters Card -->
+<div class="bg-white rounded-lg shadow mb-6">
+    <!-- Header with Toggle -->
+    <div class="px-5 py-4 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-800">Filters & Sorting</h3>
+            <button type="button" id="toggleFilters" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                <span id="toggleText">Hide Filters</span>
+            </button>
         </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div id="filtersContent" class="px-5 py-4">
+        @php
+            $currentSort = $sort ?? request('sort', 'start_date');
+            $currentDirection = $direction ?? request('direction', 'desc');
+        @endphp
+        <form method="GET" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Search Input -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                    <input type="text" name="q" value="{{ request('q') }}" placeholder="Search by reason, status, or date..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                </div>
+
+                <!-- Sort By -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                    <select name="sort" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="start_date" {{ $currentSort=='start_date'?'selected':'' }}>Start Date</option>
+                        <option value="end_date" {{ $currentSort=='end_date'?'selected':'' }}>End Date</option>
+                        <option value="status" {{ $currentSort=='status'?'selected':'' }}>Status</option>
+                        <option value="reason" {{ $currentSort=='reason'?'selected':'' }}>Reason</option>
+                        <option value="created_at" {{ $currentSort=='created_at'?'selected':'' }}>Created</option>
+                    </select>
+                </div>
+
+                <!-- Sort Direction -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Order</label>
+                    <select name="direction" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="asc" {{ $currentDirection=='asc'?'selected':'' }}>Ascending</option>
+                        <option value="desc" {{ $currentDirection=='desc'?'selected':'' }}>Descending</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-2 pt-2">
+                <button type="submit" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition font-medium">
+                    Apply Filters
+                </button>
+                <a href="{{ route('admin.closure_periods.index') }}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition border border-gray-300">
+                    Clear All
+                </a>
+            </div>
+        </form>
     </div>
 </div>
 
-<div class="bg-white rounded shadow p-4">
-    
+<!-- Table Section -->
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-start">
+        <button id="btnOpenCreate" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition font-medium">
+            + Closure Period
+        </button>
+    </div>
+
+    @if(($items ?? collect())->count() > 0)
     <div class="overflow-x-auto">
-    <table class="min-w-full">
-        <thead>
-            <tr class="text-left bg-gray-100">
-                <th class="py-2 px-3">Dates</th>
-                <th class="py-2 px-3">Time</th>
-                <th class="py-2 px-3">Reason</th>
-                <th class="py-2 px-3">Status</th>
-                <th class="py-2 px-3">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($items as $p)
-            <tr class="border-b">
-                <td class="py-2 px-3">{{ $p->start_date->format('M d, Y') }} – {{ $p->end_date->format('M d, Y') }}</td>
-                <td class="py-2 px-3">
-                    @if($p->is_full_day)
-                        Full day
-                    @else
-                        {{ $p->start_time }} - {{ $p->end_time }}
-                    @endif
-                </td>
-                <td class="py-2 px-3">{{ $p->reason ?? '—' }}</td>
-                <td class="py-2 px-3">
-                    @if($p->status === 'active')
-                        <span class="text-green-600 font-semibold">Active</span>
-                    @else
-                        <span class="text-yellow-600 font-semibold">Pending</span>
-                    @endif
-                </td>
-                <td class="py-2 px-3">
-                    <div class="flex gap-2">
-                        <button title="Edit Closure Period" class="px-2 py-2 text-blue-600 hover:text-blue-800 font-medium btnEdit {{ $p->status==='active' ? 'opacity-50 cursor-not-allowed' : '' }}"
-                            data-id="{{ $p->id }}"
-                            data-start_date="{{ $p->start_date->toDateString() }}"
-                            data-end_date="{{ $p->end_date->toDateString() }}"
-                            data-is_full_day="{{ $p->is_full_day ? 1 : 0 }}"
-                            data-start_time="{{ $p->start_time }}"
-                            data-end_time="{{ $p->end_time }}"
-                            data-reason="{{ $p->reason }}"
-                            data-status="{{ $p->status }}"
-                        {{ $p->status==='active' ? 'disabled' : '' }}>
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                            </svg>
-                        </button>
-                        <form method="POST" action="{{ route('admin.closure_periods.destroy', $p) }}" onsubmit="return confirm('Archive this period?')" class="inline">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" title="Archive Closure Period" class="px-2 py-2 text-red-600 hover:text-red-800 font-medium" {{ $p->status==='active' ? 'disabled' : '' }}>
+        <table class="min-w-full">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Dates</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Reason</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
+                    <th class="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                @foreach($items as $p)
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 text-sm text-gray-900">
+                        <div>{{ $p->start_date->format('M d, Y') }} – {{ $p->end_date->format('M d, Y') }}</div>
+                        <div class="text-xs text-gray-500">Full day</div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900">{{ $p->reason ?? '—' }}</td>
+                    <td class="px-6 py-4">
+                        @if($p->status === 'active')
+                            <span class="text-green-600 font-medium">Active</span>
+                        @else
+                            <span class="text-amber-600 font-medium">Pending</span>
+                        @endif
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <button title="Edit Closure Period" class="px-2 py-2 text-blue-600 hover:text-blue-800 font-medium btnEdit {{ $p->status==='active' ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                data-id="{{ $p->id }}"
+                                data-start_date="{{ $p->start_date->toDateString() }}"
+                                data-end_date="{{ $p->end_date->toDateString() }}"
+                                data-reason="{{ $p->reason ?? '' }}"
+                                data-status="{{ $p->status }}"
+                            {{ $p->status==='active' ? 'disabled' : '' }}>
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                 </svg>
                             </button>
-                        </form>
-                    </div>
-                </td>
-            </tr>
-            @empty
-            <tr>
-                <td class="py-8 px-3 text-center text-gray-500" colspan="5">
-                    @if(request('q'))
-                        No results found for your search. <a href="{{ route('admin.closure_periods.index') }}" class="text-blue-600 underline">Clear search</a>
-                    @else
-                        No closure periods yet.
-                    @endif
-                </td>
-            </tr>
-            @endforelse
-        </tbody>
-    </table>
+                            <form method="POST" action="{{ route('admin.closure_periods.destroy', $p) }}" onsubmit="return confirm('Archive this period?')" class="inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" title="Archive Closure Period" class="px-2 py-2 text-red-600 hover:text-red-800 font-medium" {{ $p->status==='active' ? 'disabled' : '' }}>
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
     </div>
-    @if(($items ?? collect())->count() > 0)
-    <div class="mt-6">
-        {{ $items->links() }}
+    @else
+    <div class="text-center py-12 px-4">
+        <div class="text-gray-400 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+        </div>
+        @if(request('q'))
+            <p class="text-gray-600 mb-4">No results found for your current filters.</p>
+            <a href="{{ route('admin.closure_periods.index') }}" class="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Clear Filters
+            </a>
+        @else
+            <p class="text-gray-600">No closure periods found.</p>
+        @endif
     </div>
     @endif
 </div>
+
+<!-- Pagination -->
+@if(($items ?? collect())->count() > 0)
+<div class="mt-6">
+    {{ $items->links() }}
+</div>
+@endif
 
 <!-- Create Modal -->
 <div id="createModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
@@ -139,18 +185,6 @@
                 <label class="block text-sm text-gray-600 mb-1">End Date</label>
                 <input type="date" name="end_date" class="border rounded px-3 py-2 w-full" min="{{ date('Y-m-d') }}" required />
             </div>
-            <div class="md:col-span-2 flex items-center gap-2">
-                <input type="checkbox" name="is_full_day" value="1" id="create_full_day" checked />
-                <label for="create_full_day" class="text-sm text-gray-700">Full day(s)</label>
-            </div>
-            <div>
-                <label class="block text-sm text-gray-600 mb-1">Start Time</label>
-                <input type="time" name="start_time" id="create_start_time" class="border rounded px-3 py-2 w-full" />
-            </div>
-            <div>
-                <label class="block text-sm text-gray-600 mb-1">End Time</label>
-                <input type="time" name="end_time" id="create_end_time" class="border rounded px-3 py-2 w-full" />
-            </div>
             <div class="md:col-span-2">
                 <label class="block text-sm text-gray-600 mb-1">Reason</label>
                 <input type="text" name="reason" class="border rounded px-3 py-2 w-full" placeholder="e.g. Holiday" />
@@ -164,11 +198,11 @@
             </div>
             <div class="md:col-span-2 flex justify-end gap-2 mt-2">
                 <button type="button" id="btnCancelCreate" class="px-4 py-2 rounded border">Cancel</button>
-                <button class="bg-blue-600 text-white px-4 py-2 rounded">Add</button>
+                <button class="bg-yellow-500 text-white px-4 py-2 rounded font-medium hover:bg-yellow-600">Add</button>
             </div>
         </form>
         <p class="text-xs text-gray-500 mt-2">
-            If "Full day(s)" is checked, time fields are ignored.<br>
+            Closure periods are always full-day events.<br>
             <strong>Note:</strong> When status is set to "Active", all reservations within the date range will be automatically cancelled.
         </p>
     </div>
@@ -194,18 +228,6 @@
                 <label class="block text-sm text-gray-600 mb-1">End Date</label>
                 <input type="date" name="end_date" id="edit_end_date" class="border rounded px-3 py-2 w-full" min="{{ date('Y-m-d') }}" required />
             </div>
-            <div class="md:col-span-2 flex items-center gap-2">
-                <input type="checkbox" name="is_full_day" value="1" id="edit_full_day" />
-                <label for="edit_full_day" class="text-sm text-gray-700">Full day(s)</label>
-            </div>
-            <div>
-                <label class="block text-sm text-gray-600 mb-1">Start Time</label>
-                <input type="time" name="start_time" id="edit_start_time" class="border rounded px-3 py-2 w-full" />
-            </div>
-            <div>
-                <label class="block text-sm text-gray-600 mb-1">End Time</label>
-                <input type="time" name="end_time" id="edit_end_time" class="border rounded px-3 py-2 w-full" />
-            </div>
             <div class="md:col-span-2">
                 <label class="block text-sm text-gray-600 mb-1">Reason</label>
                 <input type="text" name="reason" id="edit_reason" class="border rounded px-3 py-2 w-full" />
@@ -219,10 +241,11 @@
             </div>
             <div class="md:col-span-2 flex justify-end gap-2 mt-2">
                 <button type="button" id="btnCancelEdit" class="px-4 py-2 rounded border">Cancel</button>
-                <button class="bg-gray-700 text-white px-4 py-2 rounded">Save</button>
+                <button class="bg-yellow-500 text-white px-4 py-2 rounded font-medium hover:bg-yellow-600">Save</button>
             </div>
         </form>
         <p class="text-xs text-gray-500 mt-2">
+            Closure periods are always full-day events.<br>
             Active items: only Status is editable.<br>
             <strong>Note:</strong> Changing status to "Active" will automatically cancel all reservations within the date range.
         </p>
@@ -231,6 +254,16 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Filter Toggle
+    const toggleBtn = document.getElementById('toggleFilters');
+    const filtersContent = document.getElementById('filtersContent');
+    const toggleText = document.getElementById('toggleText');
+    
+    toggleBtn?.addEventListener('click', function() {
+        filtersContent.classList.toggle('hidden');
+        toggleText.textContent = filtersContent.classList.contains('hidden') ? 'Show Filters' : 'Hide Filters';
+    });
+    
     const createModal = document.getElementById('createModal');
     const editModal = document.getElementById('editModal');
     const btnOpenCreate = document.getElementById('btnOpenCreate');
@@ -249,18 +282,6 @@ document.addEventListener('DOMContentLoaded', function() {
     btnCancelCreate?.addEventListener('click', () => hide(createModal));
     btnCloseEdit?.addEventListener('click', () => hide(editModal));
     btnCancelEdit?.addEventListener('click', () => hide(editModal));
-
-    // Create modal: toggle time fields
-    const createFullDay = document.getElementById('create_full_day');
-    const createStart = document.getElementById('create_start_time');
-    const createEnd = document.getElementById('create_end_time');
-    function toggleCreateTimes(){
-        const dis = createFullDay.checked;
-        createStart.disabled = dis; createEnd.disabled = dis;
-        if (dis) { createStart.value = ''; createEnd.value = ''; }
-    }
-    createFullDay?.addEventListener('change', toggleCreateTimes);
-    toggleCreateTimes();
 
     // Validate date inputs
     const createStartDate = createModal?.querySelector('input[name="start_date"]');
@@ -305,14 +326,10 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        const fullDay = createFullDay.checked;
-        const st = createStart.value || '';
-        const et = createEnd.value || '';
         const reason = (createForm.querySelector('input[name="reason"]').value || '').trim();
         const status = createForm.querySelector('select[name="status"]').value;
-        const timeText = fullDay ? 'Full day(s)' : `${st || '—'} - ${et || '—'}`;
         const cancelNote = status === 'active' ? '\n\n⚠️ All reservations within this date range will be automatically cancelled!' : '';
-        const msg = `Add closure period?\n\nDates: ${startDate} to ${endDate}\nTime: ${timeText}\nReason: ${reason || '—'}\nStatus: ${status.toUpperCase()}${cancelNote}`;
+        const msg = `Add closure period?\n\nDates: ${startDate} to ${endDate}\nReason: ${reason || '—'}\nStatus: ${status.toUpperCase()}${cancelNote}`;
         if (!confirm(msg)) {
             e.preventDefault();
         }
@@ -324,9 +341,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const id = btn.dataset.id;
             const startDate = btn.dataset.start_date;
             const endDate = btn.dataset.end_date;
-            const isFullDay = btn.dataset.is_full_day === '1';
-            const startTime = btn.dataset.start_time || '';
-            const endTime = btn.dataset.end_time || '';
             const reason = btn.dataset.reason || '';
             const status = btn.dataset.status || 'pending';
 
@@ -335,9 +349,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const elStart = document.getElementById('edit_start_date');
             const elEnd = document.getElementById('edit_end_date');
-            const elFull = document.getElementById('edit_full_day');
-            const elST = document.getElementById('edit_start_time');
-            const elET = document.getElementById('edit_end_time');
             const elReason = document.getElementById('edit_reason');
             const elStatus = document.getElementById('edit_status');
 
@@ -346,51 +357,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
             elStart.value = startDate;
             elEnd.value = endDate;
-            elFull.checked = isFullDay;
-            elST.value = startTime;
-            elET.value = endTime;
             elReason.value = reason;
             elStatus.value = status;
 
-            // Active periods: lock fields except status
             const locked = status === 'active';
             elStart.disabled = locked;
             elEnd.disabled = locked;
-            elFull.disabled = locked;
             elReason.disabled = locked;
-            const timesLocked = locked || elFull.checked;
-            elST.disabled = timesLocked;
-            elET.disabled = timesLocked;
 
             show(editModal);
         });
     });
 
-    document.getElementById('edit_full_day')?.addEventListener('change', function() {
-        const locked = document.getElementById('edit_status').value === 'active';
-        const elST = document.getElementById('edit_start_time');
-        const elET = document.getElementById('edit_end_time');
-        const dis = locked || this.checked;
-        elST.disabled = dis; elET.disabled = dis;
-        if (this.checked) { elST.value = ''; elET.value = ''; }
-    });
-
     document.getElementById('edit_status')?.addEventListener('change', function() {
         const isActive = this.value === 'active';
-        const elStart = document.getElementById('edit_start_date');
-        const elEnd = document.getElementById('edit_end_date');
-        const elFull = document.getElementById('edit_full_day');
-        const elReason = document.getElementById('edit_reason');
-        const elST = document.getElementById('edit_start_time');
-        const elET = document.getElementById('edit_end_time');
-        elStart.disabled = isActive;
-        elEnd.disabled = isActive;
-        elFull.disabled = isActive;
-        elReason.disabled = isActive;
-        const timesLocked = isActive || elFull.checked;
-        elST.disabled = timesLocked;
-        elET.disabled = timesLocked;
-        if (elFull.checked) { elST.value = ''; elET.value = ''; }
+        document.getElementById('edit_start_date').disabled = isActive;
+        document.getElementById('edit_end_date').disabled = isActive;
+        document.getElementById('edit_reason').disabled = isActive;
     });
 
     // Validate date inputs in edit form
@@ -435,14 +418,10 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        const fullDay = document.getElementById('edit_full_day').checked;
-        const st = document.getElementById('edit_start_time').value || '';
-        const et = document.getElementById('edit_end_time').value || '';
         const reason = (document.getElementById('edit_reason').value || '').trim();
         const status = document.getElementById('edit_status').value;
-        const timeText = fullDay ? 'Full day(s)' : `${st || '—'} - ${et || '—'}`;
         const cancelNote = (oldStatus !== 'active' && status === 'active') ? '\n\n⚠️ All reservations within this date range will be automatically cancelled!' : '';
-        const msg = `Save changes to closure period?\n\nDates: ${startDate} to ${endDate}\nTime: ${timeText}\nReason: ${reason || '—'}\nStatus: ${status.toUpperCase()}${cancelNote}`;
+        const msg = `Save changes to closure period?\n\nDates: ${startDate} to ${endDate}\nReason: ${reason || '—'}\nStatus: ${status.toUpperCase()}${cancelNote}`;
         if (!confirm(msg)) {
             e.preventDefault();
         }

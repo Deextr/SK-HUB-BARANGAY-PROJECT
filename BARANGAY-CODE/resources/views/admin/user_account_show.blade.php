@@ -38,17 +38,11 @@
                     <label class="block text-sm font-medium text-gray-700">Account Status</label>
                     <div class="mt-1">
                         @if($user->account_status === 'pending')
-                            <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
-                                Pending Approval
-                            </span>
+                            <span class="text-amber-600 font-medium">Pending Approval</span>
                         @elseif($user->account_status === 'approved')
-                            <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                                Approved
-                            </span>
+                            <span class="text-green-600 font-medium">Approved</span>
                         @else
-                            <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
-                                Rejected
-                            </span>
+                            <span class="text-red-600 font-medium">Rejected</span>
                         @endif
                     </div>
                 </div>
@@ -126,7 +120,7 @@
         @endif
         
         <a href="{{ route('admin.user_accounts.edit', $user) }}" 
-           class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition">
+           class="bg-yellow-500 text-white px-6 py-2 rounded hover:bg-yellow-600 transition font-medium">
             Edit Account
         </a>
         
@@ -155,7 +149,7 @@
                             Reason for Rejection
                         </label>
                         <textarea id="rejection_reason" name="rejection_reason" rows="4" 
-                                  class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                   placeholder="Please provide a reason for rejecting this account..."
                                   required></textarea>
                     </div>

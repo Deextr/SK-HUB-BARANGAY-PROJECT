@@ -10,21 +10,12 @@
       style="background-image: url('{{ asset('Barangay_background.jpg') }}'); background-position: center 30%;">
 
     <!-- Container with flex -->
-    <div class="flex items-center justify-start h-full pl-40"> <!-- adjust pl to move right -->
+    <div class="flex items-center justify-center h-full"> <!-- adjust pl to move right -->
         <!-- Login box -->
         <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md bg-opacity-100 relative">
             
-            <!-- Logo -->
-            <div class="flex justify-center mb-6 -mt-6">
-                <div class="w-35 h-40 rounded-full overflow-hidden shadow-xl">
-                    <img src="{{ asset('LOGO.png') }}" 
-                         alt="Barangay Logo" 
-                         class="w-full h-full object-cover scale-125">
-                </div>
-            </div>
-
             <!-- Title -->
-            <h2 class="text-2xl font-bold text-center text-blue-900 mb-6">LOGIN</h2>
+            <h2 class="text-2xl font-bold text-center text-yellow-600 mb-6">LOGIN</h2>
 
             <!-- Error notification -->
             @if ($errors->any())
@@ -49,28 +40,27 @@
 
                 <!-- Email -->
                 <div class="mb-4">
-                    <label for="email" class="block text-gray-700 font-semibold">Email:</label>
-                    <input type="email" name="email" id="email" value="{{ old('email') }}" required
-                           class="w-full border px-3 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="email" name="email" id="email" value="{{ old('email') }}" placeholder="Email" required
+                           class="w-full border px-3 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-yellow-500">
                 </div>
 
                 <!-- Password with show/hide -->
                 <div class="mb-4 relative">
-                    <label for="password" class="block text-gray-700 font-semibold mb-2">Password:</label>
                     <div class="relative">
                         <input
                             type="password"
                             name="password"
                             id="password"
+                            placeholder="Password"
                             required
-                            class="w-full border px-3 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 pr-12"
+                            class="w-full border px-3 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-yellow-500 pr-12"
                         >
                         <!-- Toggle button -->
                         <button
                             type="button"
                             id="togglePassword"
                             aria-label="Show password"
-                            class="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400"
                         >
                             <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -84,23 +74,11 @@
                     </div>
                 </div>
 
-                <!-- Remember & Forgot -->
-                <div class="flex items-center justify-between mb-6 text-sm">
-                    <label class="flex items-center space-x-2 text-gray-600">
-                        <input type="checkbox" name="remember" class="rounded">
-                        <span>Remember me</span>
-                    </label>
-                    @if (Route::has('password.request'))
-                        <a href="{{ route('password.request') }}" class="text-blue-600 hover:underline">
-                            Forgot password?
-                        </a>
-                    @endif
-                </div>
 
                 <!-- Button -->
                 <div>
                     <button type="submit" 
-                            class="w-full bg-blue-600 text-white py-2 rounded-full font-bold hover:bg-blue-700 transition">
+                            class="w-full bg-yellow-500 text-white py-2 rounded-full font-bold hover:bg-yellow-600 transition">
                         LOGIN
                     </button>
                 </div>
@@ -108,7 +86,7 @@
                 <!-- Register link -->
                 <div class="mt-4 text-center">
                     <span class="text-gray-600">Don't have an account?</span>
-                    <a href="{{ route('register') }}" class="text-blue-600 font-semibold hover:underline">
+                    <a href="{{ route('register.nda') }}" class="text-yellow-600 font-semibold hover:underline">
                         Register
                     </a>
                 </div>

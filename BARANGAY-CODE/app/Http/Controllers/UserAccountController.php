@@ -15,6 +15,7 @@ class UserAccountController extends Controller
     public function index(Request $request)
     {
         $query = User::where('is_admin', false)
+                    ->where('is_archived', false)
                     ->whereIn('account_status', ['pending', 'approved', 'rejected']);
 
         // Apply search filter
@@ -110,7 +111,14 @@ class UserAccountController extends Controller
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'email' => $user->email,
+                'birth_date' => $user->birth_date ? $user->birth_date->format('F d, Y') : null,
+                'age' => $user->formatted_age ?? null,
+                'sex' => $user->sex,
+                'is_pwd' => $user->is_pwd,
                 'account_status' => $user->account_status,
+                'is_archived' => $user->is_archived,
+                'archive_reason' => $user->archive_reason,
+                'archived_at' => $user->archived_at ? $user->archived_at->format('F d, Y \a\t g:i A') : null,
                 'id_image_path' => $idImageUrl,
                 'created_at' => $user->created_at ? $user->created_at->format('F d, Y \a\t g:i A') : 'N/A',
                 'approved_at' => $user->approved_at ? $user->approved_at->format('F d, Y \a\t g:i A') : null,
@@ -213,6 +221,7 @@ class UserAccountController extends Controller
     public function pending()
     {
         $users = User::where('is_admin', false)
+                    ->where('is_archived', false)
                     ->where('account_status', 'pending')
                     ->orderBy('created_at', 'desc')
                     ->paginate(6)
@@ -227,6 +236,7 @@ class UserAccountController extends Controller
     public function approved()
     {
         $users = User::where('is_admin', false)
+                    ->where('is_archived', false)
                     ->where('account_status', 'approved')
                     ->orderBy('approved_at', 'desc')
                     ->paginate(6)
@@ -241,11 +251,43 @@ class UserAccountController extends Controller
     public function rejected()
     {
         $users = User::where('is_admin', false)
+                    ->where('is_archived', false)
                     ->where('account_status', 'rejected')
                     ->orderBy('rejected_at', 'desc')
                     ->paginate(6)
                     ->withQueryString();
 
         return view('admin.users', compact('users'));
+    }
+    
+    /**
+     * Archive a user account
+     */
+    public function archive(Request $request, User $user)
+    {
+        $request->validate([
+            'archive_reason' => 'required|string|max:1000',
+        ]);
+        
+        // Only approved accounts can be archived
+        if (!$user->isApproved()) {
+            return redirect()->back()->with('error', 'Only approved accounts can be archived.');
+        }
+        
+        $user->archive($request->archive_reason);
+        
+        return redirect()->route('admin.user_accounts.index')
+            ->with('success', 'User account archived successfully.');
+    }
+    
+    /**
+     * Unarchive a user account
+     */
+    public function unarchive(User $user)
+    {
+        $user->unarchive();
+        
+        return redirect()->route('admin.archives', ['tab' => 'users'])
+            ->with('success', 'User account unarchived successfully.');
     }
 }

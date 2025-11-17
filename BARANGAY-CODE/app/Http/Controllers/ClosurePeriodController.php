@@ -10,20 +10,32 @@ class ClosurePeriodController extends Controller
 {
     public function index(Request $request)
     {
+        $requestedSort = $request->get('sort', 'start_date');
+        $direction = strtolower($request->get('direction', 'desc'));
+        $direction = in_array($direction, ['asc', 'desc'], true) ? $direction : 'desc';
+        
         $allowedSorts = ['start_date', 'end_date', 'status', 'reason', 'created_at'];
-        $sort = in_array($request->get('sort'), $allowedSorts) ? $request->get('sort') : 'start_date';
-        $direction = $request->get('direction') === 'asc' ? 'asc' : 'desc';
+        $sort = in_array($requestedSort, $allowedSorts) ? $requestedSort : 'start_date';
 
         $items = ClosurePeriod::when($request->filled('q'), function($q) use ($request) {
-                $term = $request->get('q');
-                $q->where('reason', 'like', "%$term%")
-                  ->orWhere('status', 'like', "%$term%")
-                  ->orWhereDate('start_date', $term)
-                  ->orWhereDate('end_date', $term);
+                $term = trim($request->get('q'));
+                $like = "%{$term}%";
+                $isDate = preg_match('/^\d{4}-\d{2}-\d{2}$/', $term) === 1;
+                
+                $q->where(function($w) use ($like, $term, $isDate) {
+                    $w->where('reason', 'like', $like)
+                      ->orWhere('status', 'like', $like);
+                      
+                    if ($isDate) {
+                        $w->orWhereDate('start_date', $term)
+                          ->orWhereDate('end_date', $term);
+                    }
+                });
             })
             ->orderBy($sort, $direction)
             ->paginate(6)
             ->withQueryString();
+            
         return view('admin.closure_periods', compact('items', 'sort', 'direction'));
     }
 
@@ -33,29 +45,13 @@ class ClosurePeriodController extends Controller
             'start_date' => ['required', 'date', 'after_or_equal:today'],
             'end_date' => ['required', 'date', 'after_or_equal:today', 'after_or_equal:start_date'],
             'reason' => ['nullable', 'string', 'max:255'],
-            'is_full_day' => ['nullable', 'boolean'],
-            'start_time' => ['nullable', 'date_format:H:i'],
-            'end_time' => ['nullable', 'date_format:H:i'],
             'status' => ['nullable', 'in:pending,active'],
         ]);
-
-        $isFullDay = (bool) ($validated['is_full_day'] ?? true);
-        if (!$isFullDay) {
-            if (empty($validated['start_time']) || empty($validated['end_time']) || $validated['start_time'] >= $validated['end_time']) {
-                return back()->withErrors(['start_time' => 'Provide a valid time range.']);
-            }
-        } else {
-            $validated['start_time'] = null;
-            $validated['end_time'] = null;
-        }
 
         $closurePeriod = ClosurePeriod::create([
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
             'reason' => $validated['reason'] ?? null,
-            'is_full_day' => $isFullDay,
-            'start_time' => $validated['start_time'] ?? null,
-            'end_time' => $validated['end_time'] ?? null,
             'status' => $validated['status'] ?? 'pending',
         ]);
 
@@ -77,9 +73,6 @@ class ClosurePeriodController extends Controller
             'start_date' => ['nullable', 'date', 'after_or_equal:today'],
             'end_date' => ['nullable', 'date', 'after_or_equal:today', 'after_or_equal:start_date'],
             'reason' => ['nullable', 'string', 'max:255'],
-            'is_full_day' => ['nullable', 'boolean'],
-            'start_time' => ['nullable', 'date_format:H:i'],
-            'end_time' => ['nullable', 'date_format:H:i'],
             'status' => ['nullable', 'in:pending,active'],
         ]);
 
@@ -101,16 +94,6 @@ class ClosurePeriodController extends Controller
         }
 
         // Pending: allow full edits
-        $isFullDay = (bool) ($validated['is_full_day'] ?? $closurePeriod->is_full_day ?? true);
-        if (!$isFullDay) {
-            if (empty($validated['start_time']) || empty($validated['end_time']) || $validated['start_time'] >= $validated['end_time']) {
-                return back()->withErrors(['start_time' => 'Provide a valid time range.']);
-            }
-        } else {
-            $validated['start_time'] = null;
-            $validated['end_time'] = null;
-        }
-
         $oldStatus = $closurePeriod->status;
         $newStatus = $validated['status'] ?? $closurePeriod->status;
 
@@ -118,9 +101,6 @@ class ClosurePeriodController extends Controller
             'start_date' => $validated['start_date'] ?? $closurePeriod->start_date->toDateString(),
             'end_date' => $validated['end_date'] ?? $closurePeriod->end_date->toDateString(),
             'reason' => array_key_exists('reason', $validated) ? ($validated['reason'] ?? null) : $closurePeriod->reason,
-            'is_full_day' => $isFullDay,
-            'start_time' => $validated['start_time'] ?? $closurePeriod->start_time,
-            'end_time' => $validated['end_time'] ?? $closurePeriod->end_time,
             'status' => $newStatus,
         ]);
 
@@ -173,7 +153,7 @@ class ClosurePeriodController extends Controller
         $periods = ClosurePeriod::active()
             ->whereDate('end_date', '>=', $start)
             ->whereDate('start_date', '<=', $end)
-            ->get(['start_date','end_date','is_full_day','start_time','end_time','reason']);
+            ->get(['start_date','end_date','reason']);
 
         $dates = [];
         foreach ($periods as $p) {
@@ -198,35 +178,9 @@ class ClosurePeriodController extends Controller
      */
     private function cancelOverlappingReservations(ClosurePeriod $closurePeriod)
     {
-        $query = Reservation::where('status', '!=', 'cancelled')
-            ->where('status', '!=', 'completed')
-            ->whereBetween('reservation_date', [$closurePeriod->start_date, $closurePeriod->end_date]);
-
-        if ($closurePeriod->is_full_day) {
-            // Full day closure: cancel all reservations on these dates
-            return $query->update(['status' => 'cancelled']);
-        } else {
-            // Partial day closure: only cancel reservations that overlap with the time range
-            $closureStart = $closurePeriod->start_time ?? '00:00';
-            $closureEnd = $closurePeriod->end_time ?? '23:59';
-            
-            $reservations = $query->get();
-            $cancelledCount = 0;
-            
-            foreach ($reservations as $reservation) {
-                $resStart = $reservation->start_time;
-                $resEnd = $reservation->end_time;
-                
-                // Check if time ranges overlap
-                // Overlap occurs when: resStart < closureEnd AND resEnd > closureStart
-                if ($resStart < $closureEnd && $resEnd > $closureStart) {
-                    $reservation->update(['status' => 'cancelled']);
-                    $cancelledCount++;
-                }
-            }
-            
-            return $cancelledCount;
-        }
+        return Reservation::whereNotIn('status', ['cancelled', 'completed'])
+            ->whereBetween('reservation_date', [$closurePeriod->start_date, $closurePeriod->end_date])
+            ->update(['status' => 'cancelled']);
     }
 }
 

@@ -32,31 +32,67 @@
 @endphp
 
 <div class="space-y-8">
+    <!-- Suspension Warning -->
+    @if(Auth::user()->isSuspended())
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">Account Suspended</h3>
+                <div class="mt-2 text-sm text-red-700">
+                    <p>Your account is suspended for {{ Auth::user()->suspension_days_remaining }} days due to 3 no-show or cancellation violations. You cannot make reservations until {{ Auth::user()->suspension_end_date->format('M j, Y') }}.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+    
+    @if(session('errors') && session('errors')->has('suspension'))
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">Account Suspended</h3>
+                <div class="mt-2 text-sm text-red-700">
+                    <p>{{ session('errors')->first('suspension') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div class="bg-white p-5 rounded-lg shadow flex items-center">
-            <div class="p-3 bg-yellow-100 rounded-lg mr-3"><i class="fas fa-calendar-check text-yellow-600"></i></div>
+            <div class="p-3 bg-yellow-100 rounded-lg mr-3"><i class="fas fa-calendar-check text-yellow-600 text-xl"></i></div>
             <div>
                 <p class="text-gray-500 text-sm">Total Reservations</p>
                 <p class="text-2xl font-bold">{{ $totalCount }}</p>
             </div>
         </div>
         <div class="bg-white p-5 rounded-lg shadow flex items-center">
-            <div class="p-3 bg-green-100 rounded-lg mr-3"><i class="fas fa-check-circle text-green-600"></i></div>
+            <div class="p-3 bg-green-100 rounded-lg mr-3"><i class="fas fa-check-circle text-green-600 text-xl"></i></div>
             <div>
                 <p class="text-gray-500 text-sm">Approved/Completed</p>
                 <p class="text-2xl font-bold">{{ $approvedCount }}</p>
             </div>
         </div>
         <div class="bg-white p-5 rounded-lg shadow flex items-center">
-            <div class="p-3 bg-blue-100 rounded-lg mr-3"><i class="fas fa-clock text-blue-600"></i></div>
+            <div class="p-3 bg-amber-100 rounded-lg mr-3"><i class="fas fa-clock text-amber-600 text-xl"></i></div>
             <div>
                 <p class="text-gray-500 text-sm">Pending</p>
                 <p class="text-2xl font-bold">{{ $pendingCount }}</p>
             </div>
         </div>
         <div class="bg-white p-5 rounded-lg shadow flex items-center">
-            <div class="p-3 bg-red-100 rounded-lg mr-3"><i class="fas fa-times-circle text-red-600"></i></div>
+            <div class="p-3 bg-red-100 rounded-lg mr-3"><i class="fas fa-times-circle text-red-600 text-xl"></i></div>
             <div>
                 <p class="text-gray-500 text-sm">Cancelled</p>
                 <p class="text-2xl font-bold">{{ $cancelledCount }}</p>
@@ -82,9 +118,9 @@
                             <p class="font-semibold text-gray-800">{{ $upcoming->service?->name ?? 'Service' }}</p>
                             <p class="text-sm text-gray-600">{{ $upcoming->reservation_date?->format('M d, Y') }} • {{ \Carbon\Carbon::createFromFormat('H:i:s', $upcoming->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::createFromFormat('H:i:s', $upcoming->end_time)->format('g:i A') }}</p>
                             @if($upcoming->status === 'pending')
-                                <span class="text-yellow-600 font-semibold">Pending</span>
+                                <span class="text-amber-600 font-medium">Pending</span>
                             @else
-                                <span class="text-green-600 font-semibold">{{ ucfirst($upcoming->status) }}</span>
+                                <span class="text-green-600 font-medium">{{ ucfirst($upcoming->status) }}</span>
                             @endif
                         </div>
                     </div>
@@ -114,9 +150,15 @@
         <div class="bg-white rounded-lg shadow p-6 h-max">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
             <div class="space-y-3">
+                @if(Auth::user()->isSuspended())
+                <button disabled class="w-full inline-flex items-center justify-center bg-gray-400 text-white px-4 py-2 rounded-lg cursor-not-allowed">
+                    <i class="fas fa-ban mr-2"></i>Make Reservation (Suspended)
+                </button>
+                @else
                 <a href="{{ route('resident.reservation.add') }}" class="w-full inline-flex items-center justify-center bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg transition">
                     <i class="fas fa-plus mr-2"></i>Make Reservation
                 </a>
+                @endif
                 <a href="{{ route('resident.reservation') }}" class="w-full inline-flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg transition">
                     <i class="fas fa-list mr-2"></i>My Reservations
                 </a>
@@ -152,13 +194,13 @@
                             <td class="py-2 px-3">{{ \Carbon\Carbon::createFromFormat('H:i:s', $item->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::createFromFormat('H:i:s', $item->end_time)->format('g:i A') }}</td>
                             <td class="py-2 px-3">
                                 @if($item->status === 'pending')
-                                    <span class="text-yellow-600 font-semibold">Pending</span>
+                                    <span class="text-amber-600 font-medium">Pending</span>
                                 @elseif($item->status === 'cancelled')
-                                    <span class="text-red-600 font-semibold">Cancelled</span>
+                                    <span class="text-red-600 font-medium">Cancelled</span>
                                 @elseif($item->status === 'completed')
-                                    <span class="text-green-600 font-semibold">Completed</span>
+                                    <span class="text-green-600 font-medium">Completed</span>
                                 @else
-                                    <span class="text-green-600 font-semibold">{{ ucfirst($item->status) }}</span>
+                                    <span class="text-green-600 font-medium">{{ ucfirst($item->status) }}</span>
                                 @endif
                             </td>
                             <td class="py-2 px-3 flex gap-2">

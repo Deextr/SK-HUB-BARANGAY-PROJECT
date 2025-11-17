@@ -35,14 +35,14 @@
                     <label for="first_name" class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                     <input type="text" name="first_name" id="first_name" 
                            value="{{ old('first_name', $user->first_name) }}"
-                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
                 </div>
                 
                 <div>
                     <label for="last_name" class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
                     <input type="text" name="last_name" id="last_name" 
                            value="{{ old('last_name', $user->last_name) }}"
-                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
                 </div>
                 
             </div>
@@ -55,7 +55,7 @@
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
                     <input type="email" name="email" id="email" 
                            value="{{ old('email', $user->email) }}"
-                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
                 </div>
             </div>
         </div>
@@ -68,15 +68,15 @@
                     <div>
                         <span class="text-sm font-medium text-gray-700">Current Status:</span>
                         @if($user->account_status === 'pending')
-                            <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium ml-2">
+                            <span class="text-amber-600 font-medium ml-2">
                                 Pending Approval
                             </span>
                         @elseif($user->account_status === 'approved')
-                            <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium ml-2">
+                            <span class="text-green-600 font-medium ml-2">
                                 Approved
                             </span>
                         @else
-                            <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium ml-2">
+                            <span class="text-red-600 font-medium ml-2">
                                 Rejected
                             </span>
                         @endif
@@ -99,7 +99,7 @@
                 Cancel
             </a>
             <button type="submit" 
-                    class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition">
+                    class="bg-yellow-500 text-white px-6 py-2 rounded hover:bg-yellow-600 transition font-medium">
                 Update Account
             </button>
         </div>
