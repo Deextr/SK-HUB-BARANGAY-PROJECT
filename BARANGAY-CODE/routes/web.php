@@ -8,6 +8,7 @@ use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserAccountController;
 use App\Http\Controllers\ArchivesController;
 use App\Http\Controllers\ReportsController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Middleware\IsAdmin;
 use App\Http\Middleware\IsResident;
 use Illuminate\Support\Facades\Route;
@@ -27,7 +28,7 @@ Route::middleware('guest')->group(function () {
 
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login.form');
     Route::post('/login', [AuthController::class, 'login'])->name('login');
-    
+
     // Pending account page
     Route::get('/account/pending', [AuthController::class, 'showPendingPage'])->name('account.pending');
 });
@@ -39,7 +40,7 @@ Route::middleware('auth')->group(function () {
 
     // Resident Dashboard
     Route::get('/resident/dashboard', function () {
-        return view('resident.dashboard'); 
+        return view('resident.dashboard');
     })->name('resident.dashboard');
 
     // ✅ Admin-only routes
@@ -52,11 +53,11 @@ Route::middleware('auth')->group(function () {
             ->name('admin.reservations.set_times');
         Route::put('/reservations/{reservation}/cancel', [ReservationController::class, 'adminCancel'])
             ->name('admin.reservations.cancel');
-            // Closure periods CRUD
-            Route::get('/closure-periods', [ClosurePeriodController::class, 'index'])->name('admin.closure_periods.index');
-            Route::post('/closure-periods', [ClosurePeriodController::class, 'store'])->name('admin.closure_periods.store');
-            Route::put('/closure-periods/{closurePeriod}', [ClosurePeriodController::class, 'update'])->name('admin.closure_periods.update');
-            Route::delete('/closure-periods/{closurePeriod}', [ClosurePeriodController::class, 'destroy'])->name('admin.closure_periods.destroy');
+        // Closure periods CRUD
+        Route::get('/closure-periods', [ClosurePeriodController::class, 'index'])->name('admin.closure_periods.index');
+        Route::post('/closure-periods', [ClosurePeriodController::class, 'store'])->name('admin.closure_periods.store');
+        Route::put('/closure-periods/{closurePeriod}', [ClosurePeriodController::class, 'update'])->name('admin.closure_periods.update');
+        Route::delete('/closure-periods/{closurePeriod}', [ClosurePeriodController::class, 'destroy'])->name('admin.closure_periods.destroy');
         Route::get('/closure-periods/archives', [ClosurePeriodController::class, 'archives'])->name('admin.closure_periods.archives');
         Route::post('/closure-periods/{id}/restore', [ClosurePeriodController::class, 'restore'])->name('admin.closure_periods.restore');
 
@@ -88,7 +89,7 @@ Route::middleware('auth')->group(function () {
             'update' => 'admin.user_accounts.update',
             'destroy' => 'admin.user_accounts.destroy',
         ]);
-        
+
         // User Account Status Management
         Route::post('/user-accounts/{user}/approve', [UserAccountController::class, 'approve'])->name('admin.user_accounts.approve');
         Route::post('/user-accounts/{user}/reject', [UserAccountController::class, 'reject'])->name('admin.user_accounts.reject');
@@ -97,7 +98,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/user-accounts/filter/pending', [UserAccountController::class, 'pending'])->name('admin.user_accounts.pending');
         Route::get('/user-accounts/filter/approved', [UserAccountController::class, 'approved'])->name('admin.user_accounts.approved');
         Route::get('/user-accounts/filter/rejected', [UserAccountController::class, 'rejected'])->name('admin.user_accounts.rejected');
-        
+
         // Legacy users route for backward compatibility
         Route::get('/users', [UserAccountController::class, 'index'])->name('admin.users');
 
@@ -105,7 +106,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/reports', [ReportsController::class, 'index'])->name('admin.reports.index');
         Route::get('/reports/export/csv', [ReportsController::class, 'exportCsv'])->name('admin.reports.export.csv');
         Route::get('/reports/export/pdf', [ReportsController::class, 'exportPdf'])->name('admin.reports.export.pdf');
-        
     });
 
     // Resident-only routes
@@ -133,7 +133,7 @@ Route::middleware('auth')->group(function () {
         // Terms and Conditions page before reservation
         Route::get('/reservation/terms', [ReservationController::class, 'showTerms'])->name('resident.reservation.terms');
         Route::post('/reservation/terms', [ReservationController::class, 'acceptTerms'])->name('resident.reservation.accept_terms');
-        
+
         // Add Reservation form - Wizard view (with cooldown awareness)
         Route::get('/reservation/add', [ReservationController::class, 'create'])->name('resident.reservation.add');
 
@@ -146,6 +146,8 @@ Route::middleware('auth')->group(function () {
 
         // History
         Route::get('/reservation-history', [ReservationController::class, 'history'])->name('resident.reservation.history');
+        Route::get('/setting', [SettingsController::class, 'index'])->name('resident.settings.index');
+        Route::post('/setting/update', [SettingsController::class, 'update'])->name('resident.settings.update');
     });
 
     // Default redirect after login based on role

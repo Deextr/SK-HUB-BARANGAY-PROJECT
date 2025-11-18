@@ -7,41 +7,41 @@
 <!-- Time Range Filter -->
 <div class="mb-6">
     <div class="flex flex-wrap gap-2">
-        <a href="{{ route('dashboard', ['time_range' => 'today']) }}" 
-           class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 {{ $timeRange === 'today' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg shadow-yellow-500/30' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200' }}">
+        <a href="{{ route('dashboard', ['time_range' => 'today']) }}"
+            class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 {{ $timeRange === 'today' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg shadow-yellow-500/30' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200' }}">
             Today
         </a>
-        <a href="{{ route('dashboard', ['time_range' => 'last_7_days']) }}" 
-           class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 {{ $timeRange === 'last_7_days' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg shadow-yellow-500/30' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200' }}">
+        <a href="{{ route('dashboard', ['time_range' => 'last_7_days']) }}"
+            class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 {{ $timeRange === 'last_7_days' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg shadow-yellow-500/30' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200' }}">
             7 Days
         </a>
-        <a href="{{ route('dashboard', ['time_range' => 'last_30_days']) }}" 
-           class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 {{ $timeRange === 'last_30_days' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg shadow-yellow-500/30' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200' }}">
+        <a href="{{ route('dashboard', ['time_range' => 'last_30_days']) }}"
+            class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 {{ $timeRange === 'last_30_days' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg shadow-yellow-500/30' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200' }}">
             30 Days
         </a>
-        <a href="{{ route('dashboard', ['time_range' => 'last_90_days']) }}" 
-           class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 {{ $timeRange === 'last_90_days' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg shadow-yellow-500/30' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200' }}">
+        <a href="{{ route('dashboard', ['time_range' => 'last_90_days']) }}"
+            class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 {{ $timeRange === 'last_90_days' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg shadow-yellow-500/30' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200' }}">
             90 Days
         </a>
-        <button type="button" id="customRangeBtn" 
-                class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 {{ $timeRange === 'custom' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg shadow-yellow-500/30' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200' }}">
+        <button type="button" id="customRangeBtn"
+            class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 {{ $timeRange === 'custom' ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg shadow-yellow-500/30' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200' }}">
             <i class="fas fa-calendar-alt mr-1.5"></i>Custom
         </button>
     </div>
-    
+
     <!-- Custom Date Range -->
     <div id="custom_date_range" class="mt-4 pt-4 border-t border-gray-100 {{ $timeRange === 'custom' ? '' : 'hidden' }}">
         <form id="customRangeForm" action="{{ route('dashboard') }}" method="GET" class="flex flex-wrap gap-3 items-end">
             <input type="hidden" name="time_range" value="custom">
             <div class="flex-1 min-w-[200px]">
                 <label for="start_date" class="block text-xs font-semibold text-gray-600 mb-1.5">Start Date</label>
-                <input type="date" id="start_date" name="start_date" value="{{ $startDate->format('Y-m-d') }}" 
-                       class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition">
+                <input type="date" id="start_date" name="start_date" value="{{ $startDate->format('Y-m-d') }}"
+                    class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition">
             </div>
             <div class="flex-1 min-w-[200px]">
                 <label for="end_date" class="block text-xs font-semibold text-gray-600 mb-1.5">End Date</label>
-                <input type="date" id="end_date" name="end_date" value="{{ $endDate->format('Y-m-d') }}" 
-                       class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition">
+                <input type="date" id="end_date" name="end_date" value="{{ $endDate->format('Y-m-d') }}"
+                    class="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition">
             </div>
             <button type="submit" class="px-5 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:shadow-yellow-500/30 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-all duration-200">
                 Apply Filter
@@ -69,7 +69,7 @@
             </div>
         </div>
     </a>
-    
+
     <!-- Completed -->
     <a href="{{ route('reservation.dashboard', ['status' => 'completed']) }}" class="group bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md hover:border-green-300 transition-all duration-200">
         <div class="flex items-center justify-between">
@@ -87,7 +87,7 @@
             </div>
         </div>
     </a>
-    
+
     <!-- Pending -->
     <a href="{{ route('reservation.dashboard', ['status' => 'pending']) }}" class="group bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md hover:border-amber-300 transition-all duration-200">
         <div class="flex items-center justify-between">
@@ -105,7 +105,7 @@
             </div>
         </div>
     </a>
-    
+
     <!-- Cancelled -->
     <a href="{{ route('reservation.dashboard', ['status' => 'cancelled']) }}" class="group bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md hover:border-red-300 transition-all duration-200">
         <div class="flex items-center justify-between">
@@ -123,7 +123,7 @@
             </div>
         </div>
     </a>
-    
+
     <!-- Inactive Users -->
     <a href="{{ route('admin.user_accounts.index') }}" class="group bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md hover:border-indigo-300 transition-all duration-200">
         <div class="flex items-center justify-between">
@@ -141,7 +141,7 @@
             </div>
         </div>
     </a>
-    
+
     <!-- Top Service -->
     <a href="{{ route('admin.services.index') }}" class="group bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md hover:border-blue-300 transition-all duration-200">
         <div class="flex items-center justify-between">
@@ -181,7 +181,7 @@
             <canvas id="appointmentTrendsChart"></canvas>
         </div>
     </div>
-    
+
     <!-- Inactive Users Trend -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
         <div class="flex items-start justify-between mb-5">
@@ -197,7 +197,7 @@
             <canvas id="inactiveUsersChart"></canvas>
         </div>
     </div>
-    
+
     <!-- Popular Services Chart -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
         <div class="flex items-start justify-between mb-5">
@@ -247,18 +247,18 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $row->reservation_date?->format('M d, Y') ?? 'N/A' }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         @if($row->start_time && $row->end_time)
-                            {{ \Carbon\Carbon::createFromFormat('H:i:s', $row->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::createFromFormat('H:i:s', $row->end_time)->format('g:i A') }}
+                        {{ \Carbon\Carbon::createFromFormat('H:i:s', $row->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::createFromFormat('H:i:s', $row->end_time)->format('g:i A') }}
                         @else
-                            N/A
+                        N/A
                         @endif
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         @if($row->status === 'cancelled')
-                            <span class="text-red-600 font-medium">Cancelled</span>
+                        <span class="text-red-600 font-medium">Cancelled</span>
                         @elseif($row->status === 'completed')
-                            <span class="text-green-600 font-medium">Completed</span>
+                        <span class="text-green-600 font-medium">Completed</span>
                         @else
-                            <span class="text-amber-600 font-medium">Pending</span>
+                        <span class="text-amber-600 font-medium">Pending</span>
                         @endif
                     </td>
                 </tr>
@@ -288,33 +288,50 @@
         // Custom Range Toggle
         const customRangeBtn = document.getElementById('customRangeBtn');
         const customDateRange = document.getElementById('custom_date_range');
-        
+
         customRangeBtn.addEventListener('click', function() {
             customDateRange.classList.toggle('hidden');
         });
-        
+
         // Chart.js Defaults
         Chart.defaults.font.family = "'Inter', system-ui, -apple-system, sans-serif";
         Chart.defaults.font.size = 12;
         Chart.defaults.color = '#6B7280';
-        
+
         // Color mapping for datasets
         const colorMapping = {
-            'Total': { border: '#FBBF24', bg: 'rgba(251, 191, 36, 0.1)' },
-            'Completed': { border: '#22C55E', bg: 'rgba(34, 197, 94, 0.1)' },
-            'Cancelled': { border: '#EF4444', bg: 'rgba(239, 68, 68, 0.1)' },
-            'Pending': { border: '#F97316', bg: 'rgba(249, 115, 22, 0.1)' }
+            'Total': {
+                border: '#FBBF24',
+                bg: 'rgba(251, 191, 36, 0.1)'
+            },
+            'Completed': {
+                border: '#22C55E',
+                bg: 'rgba(34, 197, 94, 0.1)'
+            },
+            'Cancelled': {
+                border: '#EF4444',
+                bg: 'rgba(239, 68, 68, 0.1)'
+            },
+            'Pending': {
+                border: '#F97316',
+                bg: 'rgba(249, 115, 22, 0.1)'
+            }
         };
-        
+
         // Appointment Trends Chart
-        const appointmentTrendsCtx = document.getElementById('appointmentTrendsChart').getContext('2d');
-        
+        const appointmentTrendsCtx = document.gsetElementById('appointmentTrendsChart').getContext('2d');
+
         const appointmentTrendsChart = new Chart(appointmentTrendsCtx, {
             type: 'line',
             data: {
-                labels: {!! json_encode($appointmentTrends['labels']) !!},
-                datasets: {!! json_encode($appointmentTrends['datasets']) !!}.map(dataset => {
-                    const colors = colorMapping[dataset.label] || { border: '#6B7280', bg: 'rgba(107, 114, 128, 0.1)' };
+                labels: {!!json_encode($appointmentTrends['labels']) !!},
+                datasets: {
+                    !!json_encode($appointmentTrends['datasets']) !!
+                }.map(dataset => {
+                    const colors = colorMapping[dataset.label] || {
+                        border: '#6B7280',
+                        bg: 'rgba(107, 114, 128, 0.1)'
+                    };
                     return {
                         ...dataset,
                         backgroundColor: colors.bg,
@@ -344,7 +361,10 @@
                             usePointStyle: true,
                             pointStyle: 'circle',
                             padding: 15,
-                            font: { size: 12, weight: '600' }
+                            font: {
+                                size: 12,
+                                weight: '600'
+                            }
                         }
                     },
                     tooltip: {
@@ -361,28 +381,56 @@
                 },
                 scales: {
                     x: {
-                        grid: { display: false },
-                        border: { display: false },
-                        ticks: { font: { size: 11 }, color: '#9CA3AF' }
+                        grid: {
+                            display: false
+                        },
+                        border: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 11
+                            },
+                            color: '#9CA3AF'
+                        }
                     },
                     y: {
                         beginAtZero: true,
-                        grid: { color: '#F3F4F6', drawBorder: false },
-                        border: { display: false },
-                        ticks: { precision: 0, font: { size: 11 }, color: '#9CA3AF', padding: 8 }
+                        grid: {
+                            color: '#F3F4F6',
+                            drawBorder: false
+                        },
+                        border: {
+                            display: false
+                        },
+                        ticks: {
+                            precision: 0,
+                            font: {
+                                size: 11
+                            },
+                            color: '#9CA3AF',
+                            padding: 8
+                        }
                     }
                 },
-                interaction: { mode: 'index', intersect: false }
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                }
             }
         });
-        
+
         // Inactive Users Chart - Yellow Color
         const inactiveUsersCtx = document.getElementById('inactiveUsersChart').getContext('2d');
         const inactiveUsersChart = new Chart(inactiveUsersCtx, {
             type: 'bar',
             data: {
-                labels: {!! json_encode($inactiveUsersTrend['labels']) !!},
-                datasets: {!! json_encode($inactiveUsersTrend['datasets']) !!}.map(dataset => ({
+                labels: {
+                    !!json_encode($inactiveUsersTrend['labels']) !!
+                },
+                datasets: {
+                    !!json_encode($inactiveUsersTrend['datasets']) !!
+                }.map(dataset => ({
                     ...dataset,
                     backgroundColor: 'rgba(251, 191, 36, 0.8)',
                     borderColor: '#FBBF24',
@@ -395,7 +443,9 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false },
+                    legend: {
+                        display: false
+                    },
                     tooltip: {
                         backgroundColor: 'rgba(255, 255, 255, 0.98)',
                         titleColor: '#111827',
@@ -408,32 +458,59 @@
                 },
                 scales: {
                     x: {
-                        grid: { display: false },
-                        border: { display: false },
-                        ticks: { font: { size: 11 }, color: '#9CA3AF' }
+                        grid: {
+                            display: false
+                        },
+                        border: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 11
+                            },
+                            color: '#9CA3AF'
+                        }
                     },
                     y: {
                         beginAtZero: true,
-                        grid: { color: '#F3F4F6', drawBorder: false },
-                        border: { display: false },
-                        ticks: { precision: 0, font: { size: 11 }, color: '#9CA3AF', padding: 8 }
+                        grid: {
+                            color: '#F3F4F6',
+                            drawBorder: false
+                        },
+                        border: {
+                            display: false
+                        },
+                        ticks: {
+                            precision: 0,
+                            font: {
+                                size: 11
+                            },
+                            color: '#9CA3AF',
+                            padding: 8
+                        }
                     }
                 }
             }
         });
-        
+
         // Popular Services Chart
         const popularServicesCtx = document.getElementById('popularServicesChart').getContext('2d');
         // Color order: Yellow (1st), Blue (2nd), Green (3rd), then others
         const colors = ['#FBBF24', '#3B82F6', '#10B981', '#8B5CF6', '#EC4899', '#F59E0B', '#6366F1', '#EF4444', '#F97316', '#06B6D4'];
-        
+
         const popularServicesChart = new Chart(popularServicesCtx, {
             type: 'bar',
             data: {
-                labels: {!! json_encode($popularServices['labels']) !!},
-                datasets: {!! json_encode($popularServices['datasets']) !!}.map((dataset, index) => ({
+                labels: {
+                    !!json_encode($popularServices['labels']) !!
+                },
+                datasets: {
+                    !!json_encode($popularServices['datasets']) !!
+                }.map((dataset, index) => ({
                     ...dataset,
-                    backgroundColor: {!! json_encode($popularServices['labels']) !!}.map((_, i) => colors[i % colors.length]),
+                    backgroundColor: {
+                        !!json_encode($popularServices['labels']) !!
+                    }.map((_, i) => colors[i % colors.length]),
                     borderRadius: 8,
                     borderSkipped: false
                 }))
@@ -443,7 +520,9 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false },
+                    legend: {
+                        display: false
+                    },
                     tooltip: {
                         backgroundColor: 'rgba(255, 255, 255, 0.98)',
                         titleColor: '#111827',
@@ -462,14 +541,37 @@
                 scales: {
                     x: {
                         beginAtZero: true,
-                        grid: { color: '#F3F4F6', drawBorder: false },
-                        border: { display: false },
-                        ticks: { precision: 0, font: { size: 11 }, color: '#9CA3AF', padding: 8 }
+                        grid: {
+                            color: '#F3F4F6',
+                            drawBorder: false
+                        },
+                        border: {
+                            display: false
+                        },
+                        ticks: {
+                            precision: 0,
+                            font: {
+                                size: 11
+                            },
+                            color: '#9CA3AF',
+                            padding: 8
+                        }
                     },
                     y: {
-                        grid: { display: false },
-                        border: { display: false },
-                        ticks: { font: { size: 11, weight: '500' }, color: '#374151', padding: 12 }
+                        grid: {
+                            display: false
+                        },
+                        border: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 11,
+                                weight: '500'
+                            },
+                            color: '#374151',
+                            padding: 12
+                        }
                     }
                 }
             }
