@@ -5,92 +5,79 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reports - {{ $dateRangeText }}</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 10px;
+            padding: 0;
             color: #333;
+            line-height: 1.4;
         }
         .header {
             text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 3px solid #e5e7eb;
-            padding-bottom: 20px;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 8px;
         }
         .header h1 {
             color: #1f2937;
             margin: 0;
-            font-size: 28px;
+            font-size: 18px;
+            font-weight: bold;
         }
         .header p {
-            color: #6b7280;
-            margin: 5px 0;
+            color: #333;
+            margin: 2px 0;
+            font-size: 11px;
         }
         .section {
-            margin-bottom: 40px;
+            margin-bottom: 12px;
             page-break-inside: avoid;
         }
         .section-title {
-            font-size: 20px;
+            font-size: 13px;
             font-weight: bold;
             color: #1f2937;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #e5e7eb;
-            padding-bottom: 10px;
+            margin-bottom: 6px;
+            border-bottom: 1px solid #999;
+            padding-bottom: 4px;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin-bottom: 8px;
+            font-size: 10px;
         }
         th, td {
-            border: 1px solid #d1d5db;
-            padding: 10px;
+            border: 1px solid #999;
+            padding: 4px 6px;
             text-align: left;
         }
         th {
-            background-color: #f3f4f6;
+            background-color: #e5e7eb;
             font-weight: bold;
             color: #1f2937;
         }
-        .stat-box {
-            display: inline-block;
-            margin: 10px;
-            padding: 15px;
-            border: 2px solid #e5e7eb;
-            border-radius: 5px;
-            min-width: 200px;
-            text-align: center;
-        }
-        .stat-label {
-            font-size: 12px;
-            color: #6b7280;
-            text-transform: uppercase;
-            margin-bottom: 5px;
-        }
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #1f2937;
-        }
-        .service-section {
-            margin-bottom: 30px;
-            border: 1px solid #e5e7eb;
-            padding: 15px;
-            border-radius: 5px;
-        }
-        .service-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #1f2937;
-            margin-bottom: 10px;
+        td {
+            padding: 3px 5px;
         }
         .footer {
-            margin-top: 40px;
+            margin-top: 8px;
+            text-align: center;
+            color: #666;
+            font-size: 9px;
+            border-top: 1px solid #999;
+            padding-top: 6px;
+        }
+        .no-data {
             text-align: center;
             color: #6b7280;
-            font-size: 12px;
-            border-top: 1px solid #e5e7eb;
-            padding-top: 20px;
+            padding: 10px;
+            font-style: italic;
+            font-size: 11px;
         }
     </style>
 </head>
@@ -106,52 +93,34 @@
     <div class="section">
         <div class="section-title">RESERVATIONS REPORT</div>
         
-        <div style="text-align: center; margin-bottom: 20px;">
-            <div class="stat-box">
-                <div class="stat-label">Total Reservations</div>
-                <div class="stat-value">{{ isset($reservationsData) ? number_format($reservationsData['total']) : 0 }}</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Cancelled</div>
-                <div class="stat-value">{{ isset($reservationsData) ? number_format($reservationsData['cancelled']) : 0 }}</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Completed</div>
-                <div class="stat-value">{{ isset($reservationsData) ? number_format($reservationsData['completed']) : 0 }}</div>
-            </div>
-        </div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Metric</th>
-                    <th>Count</th>
-                    <th>Percentage</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Total Reservations</td>
-                    <td>{{ isset($reservationsData) ? number_format($reservationsData['total']) : 0 }}</td>
-                    <td>100%</td>
-                </tr>
-                <tr>
-                    <td>Cancelled</td>
-                    <td>{{ isset($reservationsData) ? number_format($reservationsData['cancelled']) : 0 }}</td>
-                    <td>{{ isset($reservationsData) && $reservationsData['total'] > 0 ? number_format(($reservationsData['cancelled'] / $reservationsData['total']) * 100, 2) : 0 }}%</td>
-                </tr>
-                <tr>
-                    <td>Completed</td>
-                    <td>{{ isset($reservationsData) ? number_format($reservationsData['completed']) : 0 }}</td>
-                    <td>{{ isset($reservationsData) && $reservationsData['total'] > 0 ? number_format(($reservationsData['completed'] / $reservationsData['total']) * 100, 2) : 0 }}%</td>
-                </tr>
-                <tr>
-                    <td>Other Status</td>
-                    <td>{{ isset($reservationsData) ? number_format($reservationsData['total'] - $reservationsData['cancelled'] - $reservationsData['completed']) : 0 }}</td>
-                    <td>{{ isset($reservationsData) && $reservationsData['total'] > 0 ? number_format((($reservationsData['total'] - $reservationsData['cancelled'] - $reservationsData['completed']) / $reservationsData['total']) * 100, 2) : 0 }}%</td>
-                </tr>
-            </tbody>
-        </table>
+        @if(isset($reservationsData) && $reservationsData->count() > 0)
+            <table>
+                <thead>
+                    <tr>
+                        <th>Reference No</th>
+                        <th>Resident Name</th>
+                        <th>Service Name</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($reservationsData as $reservation)
+                        <tr>
+                            <td>{{ $reservation->reference_no }}</td>
+                            <td>{{ $reservation->user ? $reservation->user->name : 'N/A' }}</td>
+                            <td>{{ $reservation->service ? $reservation->service->name : 'N/A' }}</td>
+                            <td>{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M d, Y') }}</td>
+                            <td>{{ \Carbon\Carbon::parse($reservation->start_time)->format('h:i A') }} - {{ \Carbon\Carbon::parse($reservation->end_time)->format('h:i A') }}</td>
+                            <td>{{ ucfirst($reservation->status) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @else
+            <div class="no-data">No reservations found for the selected period.</div>
+        @endif
     </div>
     @endif
 
@@ -159,46 +128,33 @@
     <div class="section">
         <div class="section-title">SERVICES REPORT</div>
         
-        @if(count($servicesData) > 0)
-            @foreach($servicesData as $data)
-                <div class="service-section">
-                    <div class="service-title">{{ $data['service']->name }}</div>
-                    <p style="color: #6b7280; margin-bottom: 15px;">{{ $data['service']->description }}</p>
-                    
-                    <table style="margin-bottom: 15px;">
+        @if(isset($servicesData) && count($servicesData) > 0)
+            <table>
+                <thead>
+                    <tr>
+                        <th>Service Name</th>
+                        <th>Description</th>
+                        <th>Total Usage</th>
+                        <th>Unique Users</th>
+                        <th>Quantity</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($servicesData as $data)
                         <tr>
-                            <th>Total Reservations</th>
+                            <td>{{ $data['service']->name }}</td>
+                            <td>{{ $data['service']->description ?? 'N/A' }}</td>
                             <td>{{ number_format($data['usage_count']) }}</td>
-                        </tr>
-                        <tr>
-                            <th>Unique Users</th>
                             <td>{{ number_format($data['unique_users']) }}</td>
+                            <td>{{ $data['service']->capacity_units }} units</td>
+                            <td>{{ $data['service']->is_active ? 'Active' : 'Inactive' }}</td>
                         </tr>
-                    </table>
-
-                    <h4 style="font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #1f2937;">Age Range Breakdown</h4>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Age Range</th>
-                                <th>Count</th>
-                                <th>Percentage</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($data['age_breakdown'] as $range => $count)
-                                <tr>
-                                    <td>{{ $range }} years</td>
-                                    <td>{{ number_format($count) }}</td>
-                                    <td>{{ $data['usage_count'] > 0 ? number_format(($count / $data['usage_count']) * 100, 2) : 0 }}%</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endforeach
+                    @endforeach
+                </tbody>
+            </table>
         @else
-            <p style="color: #6b7280; text-align: center; padding: 20px;">No services data available for the selected period.</p>
+            <div class="no-data">No services data available for the selected period.</div>
         @endif
     </div>
     @endif

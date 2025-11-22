@@ -71,7 +71,6 @@
                     <i class="fas fa-file-csv mr-2"></i>Export as CSV
                 </a>
                 <a href="{{ route('admin.reports.export.pdf', ['date_range' => $dateRange, 'start_date' => $startDate, 'end_date' => $endDate, 'report_type' => isset($reportType) ? $reportType : 'all']) }}" 
-                   target="_blank"
                    class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-medium">
                     <i class="fas fa-file-pdf mr-2"></i>Export as PDF
                 </a>
@@ -79,7 +78,7 @@
         </div>
     </div>
 
-    <!-- Reservations Report -->
+    <!-- Reservations Report Table -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 {{ (!isset($reportType) || $reportType == 'all' || $reportType == 'reservations') ? '' : 'hidden' }}" id="reservations-report">
         <div class="px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-semibold text-gray-800">Reservations Report</h3>
@@ -89,96 +88,62 @@
                 @else
                     Period: All Time
                 @endif
+                @if(isset($reservationsData))
+                    • Total Records: <strong>{{ $reservationsData->count() }}</strong>
+                @endif
             </p>
         </div>
-        <div class="px-6 py-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Total Reservations -->
-                <div class="bg-yellow-50 rounded-lg p-6 border border-yellow-200">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-yellow-600 uppercase tracking-wide">Total Reservations</p>
-                            <p class="text-3xl font-bold text-yellow-900 mt-2">{{ isset($reservationsData) ? number_format($reservationsData['total']) : 0 }}</p>
-                        </div>
-                        <div class="bg-yellow-100 rounded-full p-4">
-                            <i class="fas fa-calendar-check text-yellow-600 text-2xl"></i>
-                        </div>
-                    </div>
+        <div class="px-6 py-4">
+            @if(isset($reservationsData) && $reservationsData->count() > 0)
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Reference No</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Resident Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Service Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Time</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($reservationsData as $reservation)
+                                <tr class="hover:bg-gray-50 transition">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $reservation->reference_no }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $reservation->user ? $reservation->user->name : 'N/A' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $reservation->service ? $reservation->service->name : 'N/A' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M d, Y') }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ \Carbon\Carbon::parse($reservation->start_time)->format('h:i A') }} - {{ \Carbon\Carbon::parse($reservation->end_time)->format('h:i A') }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        @if($reservation->status === 'pending')
+                                            <span class="text-amber-600 font-medium">Pending</span>
+                                        @elseif($reservation->status === 'confirmed')
+                                            <span class="text-green-600 font-medium">Confirmed</span>
+                                        @elseif($reservation->status === 'completed')
+                                            <span class="text-green-600 font-medium">Completed</span>
+                                        @elseif($reservation->status === 'cancelled')
+                                            <span class="text-red-600 font-medium">Cancelled</span>
+                                        @else
+                                            <span class="text-gray-600 font-medium">{{ ucfirst($reservation->status) }}</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
-
-                <!-- Cancelled Reservations -->
-                <div class="bg-red-50 rounded-lg p-6 border border-red-200">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-red-600 uppercase tracking-wide">Cancelled Reservations</p>
-                            <p class="text-3xl font-bold text-red-900 mt-2">{{ isset($reservationsData) ? number_format($reservationsData['cancelled']) : 0 }}</p>
-                        </div>
-                        <div class="bg-red-100 rounded-full p-4">
-                            <i class="fas fa-times-circle text-red-600 text-2xl"></i>
-                        </div>
-                    </div>
+            @else
+                <div class="text-center py-12">
+                    <i class="fas fa-inbox text-gray-400 text-4xl mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Reservations Found</h3>
+                    <p class="text-gray-500">There are no reservations in the selected period.</p>
                 </div>
-
-                <!-- Completed Reservations -->
-                <div class="bg-green-50 rounded-lg p-6 border border-green-200">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-green-600 uppercase tracking-wide">Completed Reservations</p>
-                            <p class="text-3xl font-bold text-green-900 mt-2">{{ isset($reservationsData) ? number_format($reservationsData['completed']) : 0 }}</p>
-                        </div>
-                        <div class="bg-green-100 rounded-full p-4">
-                            <i class="fas fa-check-circle text-green-600 text-2xl"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Additional Statistics Table -->
-            <div class="mt-6">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metric</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Count</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Percentage</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Total Reservations</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($reservationsData['total']) }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">100%</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Cancelled</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($reservationsData['cancelled']) }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ $reservationsData['total'] > 0 ? number_format(($reservationsData['cancelled'] / $reservationsData['total']) * 100, 2) : 0 }}%
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Completed</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($reservationsData['completed']) }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ $reservationsData['total'] > 0 ? number_format(($reservationsData['completed'] / $reservationsData['total']) * 100, 2) : 0 }}%
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Other Status</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ number_format($reservationsData['total'] - $reservationsData['cancelled'] - $reservationsData['completed']) }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ $reservationsData['total'] > 0 ? number_format((($reservationsData['total'] - $reservationsData['cancelled'] - $reservationsData['completed']) / $reservationsData['total']) * 100, 2) : 0 }}%
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+            @endif
         </div>
     </div>
 
-    <!-- Services Report -->
+    <!-- Services Report Table -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 {{ (!isset($reportType) || $reportType == 'all' || $reportType == 'services') ? '' : 'hidden' }}" id="services-report">
         <div class="px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-semibold text-gray-800">Services Report</h3>
@@ -188,65 +153,44 @@
                 @else
                     Period: All Time
                 @endif
+                @if(isset($servicesData))
+                    • Total Services: <strong>{{ count($servicesData) }}</strong>
+                @endif
             </p>
         </div>
-        <div class="px-6 py-6">
-            @if(count($servicesData) > 0)
-                <div class="space-y-6">
-                    @foreach($servicesData as $data)
-                        <div class="border border-gray-200 rounded-lg p-6">
-                            <!-- Service Header -->
-                            <div class="flex items-center justify-between mb-4">
-                                <div>
-                                    <h4 class="text-xl font-semibold text-gray-900">{{ $data['service']->name }}</h4>
-                                    <p class="text-sm text-gray-500 mt-1">{{ $data['service']->description }}</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-sm text-gray-500">Total Usage</p>
-                                    <p class="text-2xl font-bold text-yellow-600">{{ number_format($data['usage_count']) }}</p>
-                                </div>
-                            </div>
-
-                            <!-- Usage Statistics -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                <div class="bg-gray-50 rounded-lg p-4">
-                                    <p class="text-sm font-medium text-gray-600">Total Reservations</p>
-                                    <p class="text-2xl font-bold text-gray-900 mt-1">{{ number_format($data['usage_count']) }}</p>
-                                </div>
-                                <div class="bg-gray-50 rounded-lg p-4">
-                                    <p class="text-sm font-medium text-gray-600">Unique Users</p>
-                                    <p class="text-2xl font-bold text-gray-900 mt-1">{{ number_format($data['unique_users']) }}</p>
-                                </div>
-                            </div>
-
-                            <!-- Age Range Breakdown -->
-                            <div>
-                                <h5 class="text-md font-semibold text-gray-800 mb-3">Age Range Breakdown</h5>
-                                <div class="overflow-x-auto">
-                                    <table class="min-w-full divide-y divide-gray-200">
-                                        <thead class="bg-gray-50">
-                                            <tr>
-                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age Range</th>
-                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Count</th>
-                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Percentage</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="bg-white divide-y divide-gray-200">
-                                            @foreach($data['age_breakdown'] as $range => $count)
-                                                <tr>
-                                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{{ $range }} years</td>
-                                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ number_format($count) }}</td>
-                                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                                        {{ $data['usage_count'] > 0 ? number_format(($count / $data['usage_count']) * 100, 2) : 0 }}%
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
+        <div class="px-6 py-4">
+            @if(isset($servicesData) && count($servicesData) > 0)
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Service Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Description</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Total Usage</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Unique Users</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Quantity</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($servicesData as $data)
+                                <tr class="hover:bg-gray-50 transition">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $data['service']->name }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-700">{{ $data['service']->description ?? 'N/A' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-yellow-600">{{ number_format($data['usage_count']) }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ number_format($data['unique_users']) }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $data['service']->capacity_units }} units</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        @if($data['service']->is_active)
+                                            <span class="text-green-600 font-medium">Active</span>
+                                        @else
+                                            <span class="text-gray-600 font-medium">Inactive</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             @else
                 <div class="text-center py-12">

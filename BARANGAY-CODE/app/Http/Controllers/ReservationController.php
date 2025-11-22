@@ -85,6 +85,7 @@ class ReservationController extends Controller
                 });
             })
             ->when($request->filled('date'), fn($q) => $q->whereDate('reservation_date', $request->date))
+            ->when($request->filled('status'), fn($q) => $q->where('status', $request->status))
             ->orderBy($sort, $direction)
             // Tiebreaker: for same date/time, show later start times first when sorting desc
             ->orderBy('start_time', $direction === 'asc' ? 'asc' : 'desc')
@@ -104,11 +105,11 @@ class ReservationController extends Controller
         $sortable = [
             'id' => 'reservations.id',
             'reference_no' => 'reservations.reference_no',
+            'resident' => 'resident_name',
             'service' => 'services.name',
             'reservation_date' => 'reservations.reservation_date',
             'start_time' => 'reservations.start_time',
             'end_time' => 'reservations.end_time',
-            'status' => 'reservations.status',
         ];
 
         $reservations = Reservation::query()
@@ -142,7 +143,8 @@ class ReservationController extends Controller
                     }
                 });
             })
-            ->when($request->filled('date'), fn($q) => $q->whereDate('reservations.reservation_date', $request->date));
+            ->when($request->filled('date'), fn($q) => $q->whereDate('reservations.reservation_date', $request->date))
+            ->when($request->filled('status'), fn($q) => $q->where('reservations.status', $request->status));
 
         if ($requestedSort === 'resident') {
             $reservations->orderBy('resident_name', $direction);
@@ -563,7 +565,11 @@ class ReservationController extends Controller
                 ->withErrors(['error' => 'Cancellation period has expired. You can only cancel within 10 minutes after booking.']);
         }
         
-        $reservation->update(['status' => 'cancelled']);
+        $reservation->update([
+            'status' => 'cancelled',
+            'cancelled_by' => Auth::id(),
+            'cancelled_at' => now(),
+        ]);
         return redirect()->route('resident.reservation')->with('status', 'Reservation cancelled successfully.');
     }
 
@@ -642,7 +648,8 @@ class ReservationController extends Controller
         // Use the model method to cancel with reason and optional suspension
         $reservation->cancelWithReason(
             $validated['cancellation_reason'],
-            $applySuspension
+            $applySuspension,
+            Auth::id()
         );
         
         $message = "Reservation #{$reservation->reference_no} has been cancelled.";
@@ -883,5 +890,39 @@ class ReservationController extends Controller
         if ($periods->isNotEmpty()) {
             abort(422, 'The selected date is closed.');
         }
+    }
+
+    /**
+     * Get today's reservations for 5-minute warning notifications
+     */
+    public function getTodayWarnings()
+    {
+        $today = now()->toDateString();
+        
+        $reservations = Reservation::query()
+            ->leftJoin('users', 'users.id', '=', 'reservations.user_id')
+            ->leftJoin('services', 'services.id', '=', 'reservations.service_id')
+            ->select(
+                'reservations.id',
+                'reservations.end_time',
+                'users.first_name',
+                'users.last_name',
+                'services.name as service_name'
+            )
+            ->whereDate('reservations.reservation_date', $today)
+            ->whereIn('reservations.status', ['pending', 'confirmed'])
+            ->get()
+            ->map(function ($reservation) {
+                return [
+                    'id' => $reservation->id,
+                    'end_time' => substr($reservation->end_time, 0, 5), // HH:MM format
+                    'resident_name' => trim($reservation->first_name . ' ' . $reservation->last_name),
+                    'service_name' => $reservation->service_name,
+                ];
+            });
+
+        return response()->json([
+            'reservations' => $reservations,
+        ]);
     }
 }

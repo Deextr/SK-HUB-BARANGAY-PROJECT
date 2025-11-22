@@ -204,7 +204,7 @@
                                 @endif
                             </td>
                             <td class="py-2 px-3 flex gap-2">
-                                <a href="{{ route('resident.reservation.ticket', $item->id) }}" class="inline-flex items-center bg-gray-700 hover:bg-gray-800 text-white px-3 py-1 rounded text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600">
+                                <a href="{{ route('resident.reservation.ticket', $item->id) }}" class="inline-flex items-center bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600">
                                     <i class="fa fa-ticket-alt mr-1"></i> Ticket
                                 </a>
                             </td>

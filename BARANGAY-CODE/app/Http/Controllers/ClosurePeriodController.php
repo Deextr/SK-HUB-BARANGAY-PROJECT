@@ -178,9 +178,21 @@ class ClosurePeriodController extends Controller
      */
     private function cancelOverlappingReservations(ClosurePeriod $closurePeriod)
     {
-        return Reservation::whereNotIn('status', ['cancelled', 'completed'])
+        $reservations = Reservation::whereNotIn('status', ['cancelled', 'completed'])
             ->whereBetween('reservation_date', [$closurePeriod->start_date, $closurePeriod->end_date])
-            ->update(['status' => 'cancelled']);
+            ->get();
+
+        $cancelledCount = 0;
+        foreach ($reservations as $reservation) {
+            $reservation->cancelWithReason(
+                'Cancelled due to facility closure period.',
+                false, // No suspension for system-initiated cancellations
+                Auth::id() // Record the admin who created/activated the closure period
+            );
+            $cancelledCount++;
+        }
+
+        return $cancelledCount;
     }
 }
 

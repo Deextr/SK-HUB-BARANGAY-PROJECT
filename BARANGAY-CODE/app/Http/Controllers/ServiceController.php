@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Service;
+use App\Models\Reservation;
+use App\Services\ServiceArchiveService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -70,8 +73,32 @@ class ServiceController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('services', 'name')->ignore($service->id)],
             'description' => ['nullable', 'string', 'max:2000'],
-            'capacity_units' => ['required', 'integer', 'min:1'],
+            'capacity_units' => ['required', 'integer', 'min:' . $service->capacity_units],
+        ], [
+            'capacity_units.min' => 'Capacity units cannot be decreased. Current capacity is ' . $service->capacity_units . ' units. To reduce capacity, use the Archive Units feature.',
         ]);
+
+        $isBecomingInactive = !$request->boolean('is_active') && $service->is_active;
+        $cancelledCount = 0;
+
+        // If service is being set to inactive, cancel all future reservations
+        if ($isBecomingInactive) {
+            $cancelledCount = Reservation::where('service_id', $service->id)
+                ->whereIn('status', ['pending', 'confirmed'])
+                ->where('reservation_date', '>=', Carbon::today())
+                ->count();
+
+            Reservation::where('service_id', $service->id)
+                ->whereIn('status', ['pending', 'confirmed'])
+                ->where('reservation_date', '>=', Carbon::today())
+                ->each(function ($reservation) {
+                    $reservation->cancelWithReason(
+                        'Service has been deactivated.',
+                        false, // No suspension for system-initiated cancellations
+                        Auth::id() // Record the admin who deactivated the service
+                    );
+                });
+        }
 
         $service->update([
             'name' => $validated['name'],
@@ -79,13 +106,45 @@ class ServiceController extends Controller
             'capacity_units' => (int) $validated['capacity_units'],
             'is_active' => $request->boolean('is_active'),
         ]);
-        return redirect()->back()->with('status', 'Service updated');
+
+        $message = 'Service updated';
+        if ($isBecomingInactive && $cancelledCount > 0) {
+            $message .= " - $cancelledCount future reservation(s) cancelled";
+        }
+
+        return redirect()->back()->with('status', $message);
     }
 
     public function destroy(Service $service)
     {
         $service->delete();
         return redirect()->back()->with('status', 'Service archived');
+    }
+
+    public function archiveUnits(Request $request, Service $service)
+    {
+        $validated = $request->validate([
+            'units_to_archive' => ['required', 'integer', 'min:1', 'max:' . $service->capacity_units - 1],
+            'reason' => ['required', 'string', 'max:1000'],
+        ], [
+            'units_to_archive.max' => 'Cannot archive more than ' . ($service->capacity_units - 1) . ' units. Minimum capacity must be 1.',
+        ]);
+
+        try {
+            $archiveService = new ServiceArchiveService();
+            $result = $archiveService->archiveUnits(
+                $service,
+                (int) $validated['units_to_archive'],
+                $validated['reason']
+            );
+
+            return redirect()->back()->with([
+                'status' => 'Service units archived successfully',
+                'archive_result' => $result,
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['archive_error' => $e->getMessage()]);
+        }
     }
 
     public function restore($id)

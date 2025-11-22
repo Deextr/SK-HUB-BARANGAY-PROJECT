@@ -24,6 +24,7 @@ class Reservation extends Model
         'cancellation_reason',
         'suspension_applied',
         'cancelled_at',
+        'cancelled_by',
         'preferences',
         'reservation_reason',
         'other_reason',
@@ -49,17 +50,23 @@ class Reservation extends Model
     {
         return $this->belongsTo(ClosurePeriod::class);
     }
+
+    public function cancelledByUser()
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
+    }
     
     /**
      * Cancel a reservation with reason and optional suspension
      */
-    public function cancelWithReason(string $reason, bool $applySuspension = false): void
+    public function cancelWithReason(string $reason, bool $applySuspension = false, ?int $cancelledById = null): void
     {
         $this->update([
             'status' => 'cancelled',
             'cancellation_reason' => $reason,
             'suspension_applied' => $applySuspension,
             'cancelled_at' => now(),
+            'cancelled_by' => $cancelledById,
         ]);
         
         // If suspension is applied, increment the user's suspension count

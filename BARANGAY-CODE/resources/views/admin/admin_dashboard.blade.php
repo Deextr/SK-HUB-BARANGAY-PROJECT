@@ -97,7 +97,7 @@
                 </div>
                 <div class="text-left">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Pending</p>
-                    <p class="text-sm text-gray-400">Awaiting confirmation</p>
+                    <p class="text-sm text-gray-400">Waiting for completion</p>
                 </div>
             </div>
             <div class="text-right">

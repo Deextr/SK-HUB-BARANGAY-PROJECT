@@ -48,6 +48,8 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/reservations', [ReservationController::class, 'index'])
             ->name('reservation.dashboard');
+        Route::get('/reservations/today-warnings', [ReservationController::class, 'getTodayWarnings'])
+            ->name('admin.reservations.today_warnings');
         Route::post('/reservations/{reservation}/actual-times', [ReservationController::class, 'setActualTimes'])
             ->name('admin.reservations.set_times');
         Route::put('/reservations/{reservation}/cancel', [ReservationController::class, 'adminCancel'])
@@ -65,6 +67,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/services', [ServiceController::class, 'store'])->name('admin.services.store');
         Route::put('/services/{service}', [ServiceController::class, 'update'])->name('admin.services.update');
         Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('admin.services.destroy');
+        Route::post('/services/{service}/archive-units', [ServiceController::class, 'archiveUnits'])->name('admin.services.archive_units');
         Route::get('/services/archives', [ServiceController::class, 'archives'])->name('admin.services.archives');
         Route::get('/archives', [ArchivesController::class, 'index'])->name('admin.archives');
         // old aliases removed; single entry now serves combined archives

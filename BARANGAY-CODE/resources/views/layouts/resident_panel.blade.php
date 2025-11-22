@@ -10,8 +10,8 @@
 <body class="bg-gray-100">
 
     <!-- Sidebar -->
-    <div id="residentSidebar" class="w-full md:w-64 bg-yellow-500 text-gray-900 h-screen flex flex-col fixed inset-y-0 left-0 z-40 transform md:transform-none transition-transform duration-200 -translate-x-full md:translate-x-0 overflow-y-auto">
-        <div class="p-6 flex flex-col items-center border-b border-yellow-400">
+    <div id="residentSidebar" class="w-full md:w-64 bg-yellow-500 text-white h-screen flex flex-col fixed inset-y-0 left-0 z-40 transform md:transform-none transition-transform duration-200 -translate-x-full md:translate-x-0 overflow-y-auto">
+        <div class="p-6 flex flex-col items-center border-b border-yellow-600">
             <!-- Logo Circle -->
             <div class="flex justify-center mb-2 -mt-2">
                 <div class="w-24 h-24 rounded-full overflow-hidden shadow-xl">
@@ -28,21 +28,21 @@
         <nav class="flex-1 mt-4">
             <!-- Dashboard -->
             <a href="{{ route('resident.dashboard') }}" 
-               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-400 {{ request()->routeIs('resident.dashboard') ? 'bg-yellow-400' : '' }}">
+               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-600 {{ request()->routeIs('resident.dashboard') ? 'bg-yellow-600' : '' }}">
                 <i class="fas fa-tachometer-alt w-6 mr-3"></i>
                 Dashboard
             </a>
 
             <!-- Make Reservation -->
             <a href="{{ route('resident.reservation.add') }}" 
-               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-400 {{ request()->routeIs('resident.reservation.add') ? 'bg-yellow-400' : '' }}">
+               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-600 {{ request()->routeIs('resident.reservation.add') ? 'bg-yellow-600' : '' }}">
                 <i class="fas fa-plus-circle w-6 mr-3"></i>
                 Make Reservation
             </a>
 
             <!-- My Reservations -->
             <a href="{{ route('resident.reservation') }}" 
-               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-400 {{ request()->routeIs('resident.reservation') ? 'bg-yellow-400' : '' }}">
+               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-600 {{ request()->routeIs('resident.reservation') ? 'bg-yellow-600' : '' }}">
                 <i class="fas fa-calendar-check w-6 mr-3"></i>
                 My Reservations
             </a>
@@ -51,10 +51,10 @@
         </nav>
 
         <!-- Logout at bottom -->
-        <div class="mt-auto p-4 border-t border-yellow-400">
+        <div class="mt-auto p-4 border-t border-yellow-600">
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <button type="submit" class="flex items-center w-full py-3 px-6 hover:bg-yellow-400 transition duration-200 rounded">
+                <button type="submit" class="flex items-center w-full py-3 px-6 hover:bg-yellow-600 transition duration-200 rounded">
                     <i class="fas fa-sign-out-alt w-6 mr-3"></i>
                     Log Out
                 </button>
