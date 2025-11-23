@@ -96,6 +96,16 @@ class User extends Authenticatable
     }
 
     /**
+     * Get full name (alias for full_name)
+     */
+    public function getNameAttribute(): string
+    {
+        $firstName = $this->attributes['first_name'] ?? '';
+        $lastName = $this->attributes['last_name'] ?? '';
+        return trim(Str::title($firstName) . ' ' . Str::title($lastName));
+    }
+
+    /**
      * Get full name
      */
     public function getFullNameAttribute(): string

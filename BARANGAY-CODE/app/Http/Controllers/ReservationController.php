@@ -85,6 +85,7 @@ class ReservationController extends Controller
                 });
             })
             ->when($request->filled('date'), fn($q) => $q->whereDate('reservation_date', $request->date))
+            ->when($request->filled('status'), fn($q) => $q->where('status', $request->status))
             ->orderBy($sort, $direction)
             // Tiebreaker: for same date/time, show later start times first when sorting desc
             ->orderBy('start_time', $direction === 'asc' ? 'asc' : 'desc')
@@ -104,11 +105,11 @@ class ReservationController extends Controller
         $sortable = [
             'id' => 'reservations.id',
             'reference_no' => 'reservations.reference_no',
+            'resident' => 'resident_name',
             'service' => 'services.name',
             'reservation_date' => 'reservations.reservation_date',
             'start_time' => 'reservations.start_time',
             'end_time' => 'reservations.end_time',
-            'status' => 'reservations.status',
         ];
 
         $reservations = Reservation::query()
@@ -142,7 +143,8 @@ class ReservationController extends Controller
                     }
                 });
             })
-            ->when($request->filled('date'), fn($q) => $q->whereDate('reservations.reservation_date', $request->date));
+            ->when($request->filled('date'), fn($q) => $q->whereDate('reservations.reservation_date', $request->date))
+            ->when($request->filled('status'), fn($q) => $q->where('reservations.status', $request->status));
 
         if ($requestedSort === 'resident') {
             $reservations->orderBy('resident_name', $direction);
@@ -309,81 +311,131 @@ class ReservationController extends Controller
         ]);
     }
 
-    public function getUnavailableDates(Request $request)
-    {
-        $start = $request->query('start', now()->toDateString());
-        $end = $request->query('end', now()->addMonths(3)->toDateString());
+   public function getUnavailableDates(Request $request)
+{
+    $start = $request->query('start', now()->toDateString());
+    $end = $request->query('end', now()->addMonths(3)->toDateString());
 
-        $closedDates = [];
-        $fullyBookedDates = [];
+    $closedDates = [];
+    $fullyBookedDates = [];
 
-        // Get all active closure periods
-        $closurePeriods = ClosurePeriod::active()->get();
+    // Get all active closure periods
+    $closurePeriods = ClosurePeriod::active()->get();
 
-        // Process closure periods and expand date ranges
-        foreach ($closurePeriods as $period) {
-            $startDate = \Carbon\Carbon::parse($period->start_date);
-            $endDate = \Carbon\Carbon::parse($period->end_date);
-            
-            // Filter by requested date range
-            $rangeStart = \Carbon\Carbon::parse($start);
-            $rangeEnd = \Carbon\Carbon::parse($end);
-            
-            $currentDate = $startDate->max($rangeStart);
-            $lastDate = $endDate->min($rangeEnd);
-            
-            while ($currentDate->lte($lastDate)) {
-                $dateStr = $currentDate->toDateString();
-                if (!in_array($dateStr, $closedDates)) {
-                    $closedDates[] = $dateStr;
-                }
-                $currentDate->addDay();
+    // Process closure periods and expand date ranges
+    foreach ($closurePeriods as $period) {
+        $startDate = \Carbon\Carbon::parse($period->start_date);
+        $endDate = \Carbon\Carbon::parse($period->end_date);
+
+        // Filter by requested date range
+        $rangeStart = \Carbon\Carbon::parse($start);
+        $rangeEnd = \Carbon\Carbon::parse($end);
+
+        $currentDate = $startDate->max($rangeStart);
+        $lastDate = $endDate->min($rangeEnd);
+
+        while ($currentDate->lte($lastDate)) {
+            $dateStr = $currentDate->toDateString();
+            if (!in_array($dateStr, $closedDates)) {
+                $closedDates[] = $dateStr;
             }
+            $currentDate->addDay();
+        }
+    }
+
+    // Check for fully booked dates (per time-slot)
+    $services = Service::where('is_active', true)->get(['id', 'capacity_units']);
+    if (!$services->isEmpty()) {
+        $current = \Carbon\Carbon::parse($start);
+        $endCarbon = \Carbon\Carbon::parse($end);
+
+        // Try to load known time slots; if you have a TimeSlot model/table adjust accordingly
+        $timeSlots = [];
+        if (class_exists(\App\Models\TimeSlot::class)) {
+            $timeSlots = \App\Models\TimeSlot::all();
+        } else {
+            // Fallback: derive timeslots from reservations or define expected slots here
+            $timeSlots = \DB::table('time_slots')->get(); // adjust if table name differs
         }
 
-        // Check for fully booked dates
-        $services = Service::where('is_active', true)->get(['id', 'capacity_units']);
-        if (!$services->isEmpty()) {
-            $current = \Carbon\Carbon::parse($start);
-            $endCarbon = \Carbon\Carbon::parse($end);
-            
-            while ($current->lte($endCarbon)) {
-                $dateStr = $current->toDateString();
-                
-                // Skip if already in closed dates
-                if (!in_array($dateStr, $closedDates)) {
-                    $isFullyBooked = true;
-                    foreach ($services as $service) {
-                        $totalUnits = (int) Reservation::where('service_id', $service->id)
+        while ($current->lte($endCarbon)) {
+            $dateStr = $current->toDateString();
+
+            // Skip if already closed
+            if (in_array($dateStr, $closedDates)) {
+                $current->addDay();
+                continue;
+            }
+
+            $dateFullyBooked = true;
+
+            // For each service, check each time slot for available capacity.
+            foreach ($services as $service) {
+                // If there are no time slots defined, check per-reservation start/end pairs as a fallback
+                if ($timeSlots->isEmpty()) {
+                    // Find any reservation start/end combinations for the date (existing slots)
+                    $distinctSlots = \DB::table('reservations')
+                        ->where('service_id', $service->id)
+                        ->whereDate('reservation_date', $dateStr)
+                        ->select('start_time', 'end_time')
+                        ->distinct()
+                        ->get();
+                } else {
+                    $distinctSlots = $timeSlots;
+                }
+
+                // If there are no known slots, we cannot mark date fully booked; assume not fully booked
+                if ($distinctSlots->isEmpty()) {
+                    $dateFullyBooked = false;
+                    break 2;
+                }
+
+                foreach ($distinctSlots as $slot) {
+                    // Reservation records may reference time_slot_id or store start_time/end_time.
+                    if (isset($slot->id)) {
+                        // time_slot_id-based
+                        $reserved = Reservation::where('service_id', $service->id)
                             ->whereDate('reservation_date', $dateStr)
+                            ->where('time_slot_id', $slot->id)
                             ->whereIn('status', ['pending', 'confirmed'])
                             ->sum('units_reserved');
-                        
-                        if ($totalUnits < $service->capacity_units) {
-                            $isFullyBooked = false;
-                            break;
-                        }
+                    } else {
+                        // start_time / end_time based fallback
+                        $reserved = Reservation::where('service_id', $service->id)
+                            ->whereDate('reservation_date', $dateStr)
+                            ->where('start_time', $slot->start_time)
+                            ->where('end_time', $slot->end_time)
+                            ->whereIn('status', ['pending', 'confirmed'])
+                            ->sum('units_reserved');
                     }
-                    
-                    if ($isFullyBooked) {
-                        $fullyBookedDates[] = $dateStr;
+
+                    if ($reserved < (int) $service->capacity_units) {
+                        // Found at least one slot with capacity -> date is NOT fully booked
+                        $dateFullyBooked = false;
+                        break 2; // no need to check further services/slots
                     }
+                    // else this slot for this service is full; check next slot/service
                 }
-                
-                $current->addDay();
+            } // end services loop
+
+            if ($dateFullyBooked) {
+                $fullyBookedDates[] = $dateStr;
             }
-        }
 
-        // Combine all unavailable dates
-        $unavailableDates = array_unique(array_merge($closedDates, $fullyBookedDates));
-        sort($unavailableDates);
-
-        return response()->json([
-            'closed_dates' => $closedDates,
-            'fully_booked_dates' => $fullyBookedDates,
-            'unavailable_dates' => $unavailableDates
-        ]);
+            $current->addDay();
+        } // end date loop
     }
+
+    // Combine all unavailable dates
+    $unavailableDates = array_unique(array_merge($closedDates, $fullyBookedDates));
+    sort($unavailableDates);
+
+    return response()->json([
+        'closed_dates' => $closedDates,
+        'fully_booked_dates' => $fullyBookedDates,
+        'unavailable_dates' => $unavailableDates
+    ]);
+}
 
     public function getAvailableTimeSlots(Request $request)
     {
@@ -563,7 +615,11 @@ class ReservationController extends Controller
                 ->withErrors(['error' => 'Cancellation period has expired. You can only cancel within 10 minutes after booking.']);
         }
         
-        $reservation->update(['status' => 'cancelled']);
+        $reservation->update([
+            'status' => 'cancelled',
+            'cancelled_by' => Auth::id(),
+            'cancelled_at' => now(),
+        ]);
         return redirect()->route('resident.reservation')->with('status', 'Reservation cancelled successfully.');
     }
 
@@ -642,7 +698,8 @@ class ReservationController extends Controller
         // Use the model method to cancel with reason and optional suspension
         $reservation->cancelWithReason(
             $validated['cancellation_reason'],
-            $applySuspension
+            $applySuspension,
+            Auth::id()
         );
         
         $message = "Reservation #{$reservation->reference_no} has been cancelled.";
@@ -745,12 +802,9 @@ class ReservationController extends Controller
         $usedUnits = Reservation::where('service_id', $service->id)
             ->whereDate('reservation_date', $date)
             ->where(function ($q) use ($startTime, $endTime) {
-                $q->whereBetween('start_time', [$startTime, $endTime])
-                  ->orWhereBetween('end_time', [$startTime, $endTime])
-                  ->orWhere(function ($o) use ($startTime, $endTime) {
-                      $o->where('start_time', '<=', $startTime)
-                        ->where('end_time', '>=', $endTime);
-                  });
+                // strict overlap: existing.start < requested_end AND existing.end > requested_start
+                $q->where('start_time', '<', $endTime)
+                  ->where('end_time', '>', $startTime);
             })
             ->whereIn('status', ['pending', 'confirmed'])
             ->sum('units_reserved');
@@ -832,12 +886,9 @@ class ReservationController extends Controller
             ->where('service_id', $serviceId)
             ->whereDate('reservation_date', $date)
             ->where(function ($q) use ($start, $end) {
-                $q->whereBetween('start_time', [$start, $end])
-                  ->orWhereBetween('end_time', [$start, $end])
-                  ->orWhere(function ($o) use ($start, $end) {
-                      $o->where('start_time', '<=', $start)
-                        ->where('end_time', '>=', $end);
-                  });
+                // strict overlap check
+                $q->where('start_time', '<', $end)
+                  ->where('end_time', '>', $start);
             })
             ->whereIn('status', ['pending', 'confirmed']);
 
@@ -883,5 +934,39 @@ class ReservationController extends Controller
         if ($periods->isNotEmpty()) {
             abort(422, 'The selected date is closed.');
         }
+    }
+
+    /**
+     * Get today's reservations for 5-minute warning notifications
+     */
+    public function getTodayWarnings()
+    {
+        $today = now()->toDateString();
+        
+        $reservations = Reservation::query()
+            ->leftJoin('users', 'users.id', '=', 'reservations.user_id')
+            ->leftJoin('services', 'services.id', '=', 'reservations.service_id')
+            ->select(
+                'reservations.id',
+                'reservations.end_time',
+                'users.first_name',
+                'users.last_name',
+                'services.name as service_name'
+            )
+            ->whereDate('reservations.reservation_date', $today)
+            ->whereIn('reservations.status', ['pending', 'confirmed'])
+            ->get()
+            ->map(function ($reservation) {
+                return [
+                    'id' => $reservation->id,
+                    'end_time' => substr($reservation->end_time, 0, 5), // HH:MM format
+                    'resident_name' => trim($reservation->first_name . ' ' . $reservation->last_name),
+                    'service_name' => $reservation->service_name,
+                ];
+            });
+
+        return response()->json([
+            'reservations' => $reservations,
+        ]);
     }
 }

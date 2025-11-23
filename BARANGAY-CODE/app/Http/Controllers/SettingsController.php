@@ -23,6 +23,7 @@ class SettingsController extends Controller
 
         // Validate the request data
         $request->validate([
+             'current_password' => ['required', 'string', 'current_password'],
             'password' => 'nullable|string|min:6|confirmed',
         ]);
 

@@ -109,6 +109,21 @@
 
                     <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                         <div class="sm:col-span-6">
+                            <label for="current_password" class="block text-sm font-medium text-gray-700">
+                                Current Password
+                                <span class="text-xs font-normal text-gray-500"> (for verification) </span>
+                            </label>
+                            <div class="mt-1">
+                                <input type="password" name="current_password" id="current_password" placeholder="Enter current password"
+                                    class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md p-3 border"
+                                    autocomplete="current-password">
+                            </div>
+                            @error('current_password')
+                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div class="sm:col-span-6">
                             <label for="password" class="block text-sm font-medium text-gray-700">
                                 New Password
                                 <span class="text-xs font-normal text-gray-500">(leave blank to keep current)</span>

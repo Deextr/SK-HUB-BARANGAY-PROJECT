@@ -23,23 +23,27 @@
             $currentDirection = $direction ?? request('direction');
         @endphp
         <form method="GET" class="space-y-4">
+            <!-- Row 1: Search and Date -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- Search Input -->
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
-                    <input type="text" name="q" value="{{ request('q') }}" placeholder="Search by ID, reference, resident, service, or status..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                    <input type="text" name="q" value="{{ request('q') }}" placeholder="Search by ID, reference, resident, service..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500" />
                 </div>
 
                 <!-- Date Filter -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                    <input type="date" name="date" value="{{ request('date') }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                    <input type="date" name="date" value="{{ request('date') }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500" />
                 </div>
+            </div>
 
+            <!-- Row 2: Sort By, Status, and Order (Horizontal) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- Sort By -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
-                    <select name="sort" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <select name="sort" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500">
                         <option value="id" {{ $currentSort=='id'?'selected':'' }}>ID</option>
                         <option value="reference_no" {{ $currentSort=='reference_no'?'selected':'' }}>Reference</option>
                         <option value="resident" {{ $currentSort=='resident'?'selected':'' }}>Resident</option>
@@ -47,14 +51,24 @@
                         <option value="reservation_date" {{ $currentSort=='reservation_date'?'selected':'' }}>Date</option>
                         <option value="start_time" {{ $currentSort=='start_time'?'selected':'' }}>Start Time</option>
                         <option value="end_time" {{ $currentSort=='end_time'?'selected':'' }}>End Time</option>
-                        <option value="status" {{ $currentSort=='status'?'selected':'' }}>Status</option>
+                    </select>
+                </div>
+
+                <!-- Status Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500">
+                        <option value="">All Status</option>
+                        <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
+                        <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
+                        <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                     </select>
                 </div>
 
                 <!-- Sort Direction -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Order</label>
-                    <select name="direction" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <select name="direction" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500">
                         <option value="asc" {{ $currentDirection=='asc'?'selected':'' }}>Ascending</option>
                         <option value="desc" {{ $currentDirection=='desc'?'selected':'' }}>Descending</option>
                     </select>
@@ -113,26 +127,13 @@
             </thead>
             <tbody class="divide-y divide-gray-200">
                 @foreach($reservations as $res)
-                @php
-                    $isUpcoming = $res->status === 'pending' && $res->isUpcoming(10);
-                    $rowClass = $isUpcoming ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50';
-                @endphp
-                <tr class="{{ $rowClass }} transition-colors duration-200" 
+                <tr class="hover:bg-gray-50 transition-colors duration-200" 
                     data-reservation-date="{{ $res->reservation_date->format('Y-m-d') }}" 
                     data-date="{{ $res->reservation_date->format('Y-m-d') }}" 
                     data-start="{{ substr($res->start_time,0,5) }}" 
+                    data-end="{{ substr($res->end_time,0,5) }}"
+                    data-in="{{ $res->actual_time_in ? substr($res->actual_time_in,0,5) : '' }}"
                     data-status="{{ $res->status }}">
-                    @if($isUpcoming)
-                    <td colspan="10" class="px-3 py-1 bg-red-100 text-red-800 text-xs font-medium">
-                        ⚠️ This reservation is starting within 10 minutes!
-                    </td>
-                </tr>
-                <tr class="{{ $rowClass }} transition-colors duration-200" 
-                    data-reservation-date="{{ $res->reservation_date->format('Y-m-d') }}" 
-                    data-date="{{ $res->reservation_date->format('Y-m-d') }}" 
-                    data-start="{{ substr($res->start_time,0,5) }}" 
-                    data-status="{{ $res->status }}">
-                    @endif
                     <td class="px-6 py-4 text-sm text-gray-900">#{{ $res->id }}</td>
                     <td class="px-6 py-4 text-sm">
                         <span class="font-mono bg-gray-100 px-2 py-1 rounded text-gray-900">{{ $res->reference_no }}</span>
@@ -162,48 +163,28 @@
                         @endif
                     </td>
                     <td class="px-6 py-4 text-center">
-                        <div class="flex justify-center space-x-2">
-                            <!-- View Button -->
-                            <button type="button" 
-                                    title="View Details" 
-                                    data-id="{{ $res->id }}" 
-                                    data-ref="{{ $res->reference_no }}" 
-                                    data-resident="{{ $res->user?->full_name ?? 'Unknown Resident' }}"
-                                    data-service="{{ $res->service->name }}"
-                                    data-date="{{ $res->reservation_date->format('Y-m-d') }}" 
-                                    data-start="{{ substr($res->start_time,0,5) }}" 
-                                    data-end="{{ substr($res->end_time,0,5) }}" 
-                                    data-in="{{ $res->actual_time_in ? substr($res->actual_time_in,0,5) : '' }}" 
-                                    data-out="{{ $res->actual_time_out ? substr($res->actual_time_out,0,5) : '' }}" 
-                                    data-status="{{ $res->status }}"
-                                    data-preferences="{{ $res->preferences ?? 'None' }}"
-                                    data-reason="{{ $res->reservation_reason ?? 'None' }}"
-                                    data-other-reason="{{ $res->other_reason ?? '' }}"
-                                    data-upcoming="{{ $isUpcoming ? 'true' : 'false' }}"
-                                    class="btn-view px-2 py-2 text-blue-600 hover:text-blue-800 font-medium">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                </svg>
-                            </button>
-                            
-                            <!-- Cancel Button (only for pending reservations) -->
-                            @if($res->status === 'pending')
-                            <button type="button" 
-                                    title="Cancel Reservation" 
-                                    data-id="{{ $res->id }}" 
-                                    data-ref="{{ $res->reference_no }}" 
-                                    data-resident="{{ $res->user?->full_name ?? 'Unknown Resident' }}"
-                                    data-date="{{ $res->reservation_date->format('M j, Y') }}"
-                                    data-time="{{ \Carbon\Carbon::createFromFormat('H:i:s', $res->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::createFromFormat('H:i:s', $res->end_time)->format('g:i A') }}"
-                                    data-upcoming="{{ $isUpcoming ? 'true' : 'false' }}"
-                                    class="btn-cancel px-2 py-2 text-red-600 hover:text-red-800 font-medium">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                </svg>
-                            </button>
-                            @endif
-                        </div>
+                        <!-- View Button -->
+                        <button type="button" 
+                                title="View Details" 
+                                data-id="{{ $res->id }}" 
+                                data-ref="{{ $res->reference_no }}" 
+                                data-resident="{{ $res->user?->full_name ?? 'Unknown Resident' }}"
+                                data-service="{{ $res->service->name }}"
+                                data-date="{{ $res->reservation_date->format('Y-m-d') }}" 
+                                data-start="{{ substr($res->start_time,0,5) }}" 
+                                data-end="{{ substr($res->end_time,0,5) }}" 
+                                data-in="{{ $res->actual_time_in ? substr($res->actual_time_in,0,5) : '' }}" 
+                                data-out="{{ $res->actual_time_out ? substr($res->actual_time_out,0,5) : '' }}" 
+                                data-status="{{ $res->status }}"
+                                data-preferences="{{ $res->preferences ?? 'None' }}"
+                                data-reason="{{ $res->reservation_reason ?? 'None' }}"
+                                data-other-reason="{{ $res->other_reason ?? '' }}"
+                                class="btn-view inline-flex items-center justify-center px-2 py-2 text-blue-600 hover:text-blue-800 font-medium">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                        </button>
                     </td>
                 </tr>
                 @endforeach
@@ -299,26 +280,23 @@
                     
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Time In <span class="text-red-500">*</span></label>
-                            <input type="time" name="actual_time_in" id="m_time_in" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500" />
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Time In <span class="text-red-500">*</span></label>
+                            <input type="time" name="actual_time_in" id="m_time_in" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 cursor-pointer" />
                             <p id="timeInError" class="text-red-500 text-xs mt-1 hidden">Time In is required</p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Time Out <span class="text-red-500">*</span></label>
-                            <input type="time" name="actual_time_out" id="m_time_out" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500" />
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Time Out <span class="text-red-500">*</span></label>
+                            <input type="time" name="actual_time_out" id="m_time_out" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 cursor-pointer" />
                             <p id="timeOutError" class="text-red-500 text-xs mt-1 hidden">Time Out is required and must be after Time In</p>
                         </div>
                     </div>
-
-                    <!-- Info Note -->
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                        <p class="text-xs text-yellow-800">
-                            <strong>Submit:</strong> Requires both Time In and Time Out, and marks the reservation as completed.
-                        </p>
-                    </div>
-
+                    
                     <!-- Action Buttons -->
-                    <div id="actionsRow" class="flex justify-end gap-2">
+                    <div id="actionsRow" class="flex items-center justify-between gap-2 pt-4">
+                        <button type="button" id="modalCancelBtn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 hidden">
+                            Cancel Reservation
+                        </button>
+                        <div class="flex gap-2 ml-auto">
                             <button type="submit" name="action" value="save" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 border border-gray-300">
                                 Save & Close
                             </button>
@@ -327,9 +305,10 @@
                             </button>
                         </div>
                     </div>
+                    </div>
 
                     <!-- Back Button (for locked reservations) -->
-                    <div id="backRow" class="flex justify-end gap-2 hidden">
+                    <div id="backRow" class="flex justify-end gap-2 hidden pt-4 mt-4 border-t border-gray-200">
                         <button type="button" id="modalOnlyClose" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 border border-gray-300">
                             Back
                         </button>
@@ -369,6 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const actionsRow = document.getElementById('actionsRow');
     const backRow = document.getElementById('backRow');
     const onlyClose = document.getElementById('modalOnlyClose');
+    const modalCancelBtn = document.getElementById('modalCancelBtn');
 
     // View Buttons
     document.querySelectorAll('.btn-view').forEach(btn => {
@@ -404,21 +384,37 @@ document.addEventListener('DOMContentLoaded', function() {
             form.action = `{{ url('admin/reservations') }}/${id}/actual-times`;
             
             const isLocked = (btn.dataset.status === 'cancelled' || btn.dataset.status === 'completed');
+            const isPending = (btn.dataset.status === 'pending');
             timeIn.disabled = isLocked;
             timeOut.disabled = isLocked;
             
-            // Cancel button removed from modal
+            // Show/hide cancel button based on status
+            if (isPending) {
+                modalCancelBtn.classList.remove('hidden');
+                // Store reservation data for cancel action
+                modalCancelBtn.dataset.id = id;
+                modalCancelBtn.dataset.ref = btn.dataset.ref;
+                modalCancelBtn.dataset.resident = btn.dataset.resident;
+                modalCancelBtn.dataset.date = btn.dataset.date;
+                modalCancelBtn.dataset.time = `${startTimeAMPM} - ${endTimeAMPM}`;
+            } else {
+                modalCancelBtn.classList.add('hidden');
+            }
             
             if (isLocked) {
                 actionsRow.classList.add('hidden');
                 backRow.classList.remove('hidden');
                 timeIn.classList.add('bg-gray-100', 'cursor-not-allowed');
                 timeOut.classList.add('bg-gray-100', 'cursor-not-allowed');
+                timeIn.disabled = true;
+                timeOut.disabled = true;
             } else {
                 actionsRow.classList.remove('hidden');
                 backRow.classList.add('hidden');
                 timeIn.classList.remove('bg-gray-100', 'cursor-not-allowed');
                 timeOut.classList.remove('bg-gray-100', 'cursor-not-allowed');
+                timeIn.disabled = false;
+                timeOut.disabled = false;
             }
             
             // Pre-fill existing draft values
@@ -430,7 +426,33 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Cancel button in modal removed
+    // Cancel button in modal
+    modalCancelBtn.addEventListener('click', () => {
+        const id = modalCancelBtn.dataset.id;
+        const ref = modalCancelBtn.dataset.ref;
+        const resident = modalCancelBtn.dataset.resident;
+        const dateStr = modalCancelBtn.dataset.date;
+        const timeStr = modalCancelBtn.dataset.time;
+        
+        // Populate cancel modal
+        document.getElementById('cancel_ref').textContent = ref;
+        document.getElementById('cancel_resident').textContent = resident;
+        document.getElementById('cancel_datetime').textContent = `${dateStr} at ${timeStr}`;
+        
+        // Set the form action
+        document.getElementById('cancelReservationForm').action = `{{ url('admin/reservations') }}/${id}/cancel`;
+        
+        // Show cancel modal
+        const cancelModal = document.getElementById('cancelModal');
+        cancelModal.classList.remove('hidden');
+        cancelModal.classList.add('flex');
+        
+        // Hide view modal
+        hideModal();
+        
+        // Focus on the reason textarea
+        document.getElementById('cancellation_reason').focus();
+    });
 
     // Close Modal Functions
     function hideModal() {
@@ -452,6 +474,44 @@ document.addEventListener('DOMContentLoaded', function() {
     const timeOutInput = document.getElementById('m_time_out');
     const timeInError = document.getElementById('timeInError');
     const timeOutError = document.getElementById('timeOutError');
+    
+    // Store scheduled end time for validation
+    let scheduledEndTime = null;
+    
+    // Update scheduled end time when modal opens
+    const originalViewClick = document.querySelectorAll('.btn-view');
+    originalViewClick.forEach(btn => {
+        const originalListener = btn.onclick;
+    });
+    
+    // Override the view button click to capture scheduled times
+    document.querySelectorAll('.btn-view').forEach(btn => {
+        btn.addEventListener('click', function() {
+            scheduledEndTime = this.dataset.end; // Capture the scheduled end time (HH:MM:SS format)
+        });
+    });
+    
+    // Time In field - Insert current time on click (if empty)
+    timeInInput.addEventListener('click', function() {
+        if (!this.value) {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            this.value = `${hours}:${minutes}`;
+            this.dispatchEvent(new Event('change'));
+        }
+    });
+    
+    // Time Out field - Insert current time on click (if empty)
+    timeOutInput.addEventListener('click', function() {
+        if (!this.value) {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            this.value = `${hours}:${minutes}`;
+            this.dispatchEvent(new Event('change'));
+        }
+    });
     
     // Add event listeners to time inputs
     timeInInput.addEventListener('change', function() {
@@ -514,6 +574,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 isValid = false;
             }
             
+            // Validate Time In does not exceed scheduled end time
+            if (timeInInput.value && scheduledEndTime) {
+                const scheduledEnd = scheduledEndTime.substring(0, 5);
+                if (timeInInput.value > scheduledEnd) {
+                    e.preventDefault();
+                    timeInError.textContent = `Time In must not exceed scheduled end time (${scheduledEnd})`;
+                    timeInError.classList.remove('hidden');
+                    timeInInput.classList.add('border-red-500');
+                    isValid = false;
+                }
+            }
+            
             // Time Out is required for Submit action
             if (!timeOutInput.value) {
                 e.preventDefault();
@@ -545,6 +617,18 @@ document.addEventListener('DOMContentLoaded', function() {
         
         let isValid = true;
         
+        // Validate Time In does not exceed scheduled end time
+        if (timeInInput.value && scheduledEndTime) {
+            // Extract HH:MM from scheduledEndTime (format: HH:MM:SS)
+            const scheduledEnd = scheduledEndTime.substring(0, 5);
+            if (timeInInput.value > scheduledEnd) {
+                timeInError.textContent = `Time In must not exceed scheduled end time (${scheduledEnd})`;
+                timeInError.classList.remove('hidden');
+                timeInInput.classList.add('border-red-500');
+                isValid = false;
+            }
+        }
+        
         // Only validate if both fields have values
         if (timeInInput.value && timeOutInput.value) {
             // Check if Time Out is after Time In
@@ -564,6 +648,57 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- Include the Cancel Reservation Modal -->
 @include('admin.partials.cancel_reservation_modal')
 
+<!-- 5-Minute Warning Modal -->
+<div id="warningModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg shadow-2xl w-full max-w-md">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b-2 border-amber-500 bg-amber-50">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-amber-900">Reservation Ending Soon</h3>
+                <button id="warningClose" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6 space-y-4">
+            <div class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded">
+                <p class="text-amber-900 font-semibold text-center">
+                    <span id="warningTimeRemaining" class="text-2xl font-bold text-amber-700">5</span> minutes remaining
+                </p>
+            </div>
+
+            <div class="space-y-3 text-sm">
+                <div class="flex justify-between items-start">
+                    <span class="text-gray-600 font-medium">Resident:</span>
+                    <span id="warningResidentName" class="text-gray-900 font-semibold text-right">—</span>
+                </div>
+                <div class="flex justify-between items-start">
+                    <span class="text-gray-600 font-medium">Service:</span>
+                    <span id="warningService" class="text-gray-900 font-semibold text-right">—</span>
+                </div>
+                <div class="flex justify-between items-start">
+                    <span class="text-gray-600 font-medium">Scheduled End Time:</span>
+                    <span id="warningTime" class="text-gray-900 font-semibold text-right">—</span>
+                </div>
+            </div>
+
+            <p class="text-sm text-gray-600 text-center italic">
+                Please ensure the resident completes their reservation on time.
+            </p>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-lg flex gap-3">
+            <button id="warningDismiss" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium transition-colors">
+                Dismiss
+            </button>
+            <button id="warningViewDetails" class="flex-1 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-medium transition-colors">
+                View Details
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
 // Auto-refresh for real-time updates (only on Today's tab)
 document.addEventListener('DOMContentLoaded', function() {
@@ -575,45 +710,51 @@ document.addEventListener('DOMContentLoaded', function() {
             // Refresh the page without losing current filters/sort
             window.location.reload();
         }, refreshInterval);
-        
-        // Update the countdown timer for upcoming reservations every second
+
+        // Update half-time no-show indicators every second
         setInterval(updateUpcomingTimers, 1000);
     }
-    
+
     function updateUpcomingTimers() {
-        // Get all pending reservations
-        document.querySelectorAll('tr[data-reservation-date]').forEach(row => {
-            if (row.dataset.status !== 'pending') return;
-            
-            const reservationDate = row.dataset.date;
-            const startTime = row.dataset.start;
-            
-            // Create a date object for the reservation time
-            const [year, month, day] = reservationDate.split('-').map(Number);
-            const [hours, minutes] = startTime.split(':').map(Number);
-            const reservationDateTime = new Date(year, month - 1, day, hours, minutes);
-            
-            // Calculate time difference in minutes
-            const now = new Date();
-            const diffMs = reservationDateTime - now;
-            const diffMinutes = Math.floor(diffMs / 60000);
-            
-            // If within 10 minutes and not already marked as upcoming
-            if (diffMinutes > 0 && diffMinutes <= 10 && !row.classList.contains('bg-red-50')) {
-                row.classList.add('bg-red-50', 'hover:bg-red-100');
-                row.classList.remove('hover:bg-gray-50');
-                
-                // Add warning message if not already present
-                if (!row.previousElementSibling || !row.previousElementSibling.classList.contains('warning-row')) {
-                    const warningRow = document.createElement('tr');
-                    warningRow.classList.add('warning-row', 'bg-red-100');
-                    warningRow.innerHTML = `
-                        <td colspan="10" class="px-3 py-1 bg-red-100 text-red-800 text-xs font-medium">
-                            ⚠️ This reservation is starting within 10 minutes!
-                        </td>
-                    `;
-                    row.parentNode.insertBefore(warningRow, row);
-                }
+        const now = new Date();
+        const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+        // Highlight rows that have passed half of their scheduled time with no Time In
+        document.querySelectorAll('tbody tr[data-start][data-end]').forEach(row => {
+            const status = row.dataset.status;
+            const timeIn = row.dataset.in;
+            const startStr = row.dataset.start;
+            const endStr = row.dataset.end;
+
+            if (!startStr || !endStr) {
+                row.classList.remove('bg-red-100');
+                return;
+            }
+
+            // Only consider pending reservations with no recorded Time In
+            if (status !== 'pending' || timeIn) {
+                row.classList.remove('bg-red-100');
+                return;
+            }
+
+            const [sh, sm] = startStr.split(':').map(Number);
+            const [eh, em] = endStr.split(':').map(Number);
+            const startMinutes = sh * 60 + sm;
+            const endMinutes = eh * 60 + em;
+
+            // Guard: ignore invalid or zero-length intervals
+            if (!Number.isFinite(startMinutes) || !Number.isFinite(endMinutes) || endMinutes <= startMinutes) {
+                row.classList.remove('bg-red-100');
+                return;
+            }
+
+            const halfMinutes = startMinutes + Math.floor((endMinutes - startMinutes) / 2);
+
+            if (nowMinutes >= halfMinutes) {
+                // Apply a soft red background; transition-colors on the row keeps it smooth
+                row.classList.add('bg-red-100');
+            } else {
+                row.classList.remove('bg-red-100');
             }
         });
     }
@@ -680,6 +821,85 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('cancellation_reason').focus();
         }
     });
+    
+    // ===== 5-MINUTE WARNING NOTIFICATION SYSTEM =====
+    let warningShown = {}; // Track which reservations have shown warnings
+    let currentWarningReservationId = null; // Store current warning reservation ID
+    const warningModal = document.getElementById('warningModal');
+    const warningClose = document.getElementById('warningClose');
+    const warningDismiss = document.getElementById('warningDismiss');
+    const warningViewDetails = document.getElementById('warningViewDetails');
+    
+    // Close warning modal
+    function hideWarningModal() {
+        warningModal.classList.add('hidden');
+        warningModal.classList.remove('flex');
+    }
+    
+    warningClose.addEventListener('click', hideWarningModal);
+    warningDismiss.addEventListener('click', hideWarningModal);
+    warningModal.addEventListener('click', (e) => {
+        if (e.target === warningModal) hideWarningModal();
+    });
+    
+    // View Details button - find and click the corresponding view button
+    warningViewDetails.addEventListener('click', function() {
+        if (currentWarningReservationId) {
+            // Find the view button for this reservation
+            const viewBtn = document.querySelector(`button.btn-view[data-id="${currentWarningReservationId}"]`);
+            if (viewBtn) {
+                viewBtn.click();
+                hideWarningModal();
+            }
+        }
+    });
+    
+    // Fetch today's reservations and check for 5-minute warnings
+    async function checkReservationWarnings() {
+        try {
+            const response = await fetch('{{ url("admin/reservations/today-warnings") }}');
+            const data = await response.json();
+            
+            if (data.reservations && data.reservations.length > 0) {
+                data.reservations.forEach(reservation => {
+                    // Only show warning once per reservation
+                    if (!warningShown[reservation.id]) {
+                        // Calculate time remaining
+                        const now = new Date();
+                        const endTime = new Date();
+                        const [hours, minutes] = reservation.end_time.split(':').map(Number);
+                        endTime.setHours(hours, minutes, 0);
+                        
+                        const timeRemaining = Math.floor((endTime - now) / 1000 / 60); // minutes
+                        
+                        // Show warning if 5 minutes or less remaining
+                        if (timeRemaining > 0 && timeRemaining <= 5) {
+                            warningShown[reservation.id] = true;
+                            currentWarningReservationId = reservation.id; // Store reservation ID
+                            
+                            // Update modal content
+                            document.getElementById('warningResidentName').textContent = reservation.resident_name;
+                            document.getElementById('warningService').textContent = reservation.service_name;
+                            document.getElementById('warningTime').textContent = reservation.end_time;
+                            document.getElementById('warningTimeRemaining').textContent = timeRemaining;
+                            
+                            // Show modal
+                            warningModal.classList.remove('hidden');
+                            warningModal.classList.add('flex');
+                        }
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error checking reservation warnings:', error);
+        }
+    }
+    
+    // Check for warnings every 30 seconds
+    setInterval(checkReservationWarnings, 30000);
+    
+    // Initial check on page load
+    checkReservationWarnings();
 });
 </script>
 @endsection
