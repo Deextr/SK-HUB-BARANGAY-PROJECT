@@ -752,12 +752,9 @@ class ReservationController extends Controller
         $usedUnits = Reservation::where('service_id', $service->id)
             ->whereDate('reservation_date', $date)
             ->where(function ($q) use ($startTime, $endTime) {
-                $q->whereBetween('start_time', [$startTime, $endTime])
-                  ->orWhereBetween('end_time', [$startTime, $endTime])
-                  ->orWhere(function ($o) use ($startTime, $endTime) {
-                      $o->where('start_time', '<=', $startTime)
-                        ->where('end_time', '>=', $endTime);
-                  });
+                // Two time ranges overlap if: start_time < selected_end_time AND end_time > selected_start_time
+                $q->where('start_time', '<', $endTime)
+                  ->where('end_time', '>', $startTime);
             })
             ->whereIn('status', ['pending', 'confirmed'])
             ->sum('units_reserved');
@@ -839,12 +836,9 @@ class ReservationController extends Controller
             ->where('service_id', $serviceId)
             ->whereDate('reservation_date', $date)
             ->where(function ($q) use ($start, $end) {
-                $q->whereBetween('start_time', [$start, $end])
-                  ->orWhereBetween('end_time', [$start, $end])
-                  ->orWhere(function ($o) use ($start, $end) {
-                      $o->where('start_time', '<=', $start)
-                        ->where('end_time', '>=', $end);
-                  });
+                // Two time ranges overlap if: start_time < selected_end_time AND end_time > selected_start_time
+                $q->where('start_time', '<', $end)
+                  ->where('end_time', '>', $start);
             })
             ->whereIn('status', ['pending', 'confirmed']);
 
