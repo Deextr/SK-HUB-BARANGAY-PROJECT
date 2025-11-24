@@ -118,6 +118,11 @@ class AuthController extends Controller
                 ]);
             }
 
+            if ($user->isPartiallyRejected()) {
+                // Allow login but redirect to partial rejection page
+                return redirect()->route('account.partial_rejection');
+            }
+
             if ($user->isPending()) {
                 Auth::logout();
                 return redirect()->route('account.pending')
@@ -157,6 +162,21 @@ class AuthController extends Controller
     public function showPendingPage()
     {
         return view('auth.pending');
+    }
+
+    // Show partial rejection correction page
+    public function showPartialRejectionPage()
+    {
+        $user = Auth::user();
+        
+        // Check if user is partially rejected
+        if (!$user || !$user->isPartiallyRejected()) {
+            return redirect()->route('resident.dashboard');
+        }
+        
+        return view('auth.partial_rejection', [
+            'correction_reason' => $user->partially_rejected_reason
+        ]);
     }
     
     // Check if email exists

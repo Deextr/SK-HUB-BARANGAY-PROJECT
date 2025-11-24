@@ -54,6 +54,7 @@
                             <option value="" {{ request('status')==''?'selected':'' }}>All Status</option>
                             <option value="pending" {{ request('status')=='pending'?'selected':'' }}>Pending</option>
                             <option value="approved" {{ request('status')=='approved'?'selected':'' }}>Approved</option>
+                            <option value="partially_rejected" {{ request('status')=='partially_rejected'?'selected':'' }}>Partially Rejected</option>
                             <option value="rejected" {{ request('status')=='rejected'?'selected':'' }}>Rejected</option>
                         </select>
                     </div>
@@ -88,6 +89,10 @@
                 <a href="{{ route('admin.user_accounts.approved') }}" 
                    class="py-4 px-1 border-b-2 font-medium text-sm {{ request()->routeIs('admin.user_accounts.approved') ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
                     <i class="fas fa-check-circle mr-2"></i>Approved
+                </a>
+                <a href="{{ route('admin.user_accounts.partially_rejected') }}" 
+                   class="py-4 px-1 border-b-2 font-medium text-sm {{ request()->routeIs('admin.user_accounts.partially_rejected') ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                    <i class="fas fa-exclamation-circle mr-2"></i>Partial Rejected
                 </a>
                 <a href="{{ route('admin.user_accounts.rejected') }}" 
                    class="py-4 px-1 border-b-2 font-medium text-sm {{ request()->routeIs('admin.user_accounts.rejected') ? 'border-red-500 text-red-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
@@ -162,6 +167,8 @@
                                 <span class="text-amber-600 font-medium">Pending</span>
                             @elseif($user->account_status === 'approved')
                                 <span class="text-green-600 font-medium">Approved</span>
+                            @elseif($user->account_status === 'partially_rejected')
+                                <span class="text-amber-600 font-medium">Partially Rejected</span>
                             @else
                                 <span class="text-red-600 font-medium">Rejected</span>
                             @endif
@@ -188,23 +195,19 @@
                                 </button>
                                 
                                 @if($user->account_status === 'pending')
-                                    <form action="{{ route('admin.user_accounts.approve', $user) }}" method="POST" class="inline">
-                                        @csrf
-                                        <button type="submit" 
-                                                title="Approve Account"
-                                                class="px-2 py-2 text-green-600 hover:text-green-800 font-medium"
-                                                onclick="return confirm('Are you sure you want to approve this account?')">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                            </svg>
-                                        </button>
-                                    </form>
-                                    
-                                    <button onclick="showRejectModal({{ $user->id }}, '{{ $user->full_name }}')" 
-                                            title="Reject Account"
-                                            class="px-2 py-2 text-red-600 hover:text-red-800 font-medium">
+                                    <button onclick="showReviewModal({{ $user->id }}, '{{ $user->full_name }}')" 
+                                            title="Review Account"
+                                            class="px-2 py-2 text-yellow-600 hover:text-yellow-800 font-medium">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </button>
+                                @elseif($user->account_status === 'partially_rejected')
+                                    <button onclick="showReviewModal({{ $user->id }}, '{{ $user->full_name }}')" 
+                                            title="Review Resubmission"
+                                            class="px-2 py-2 text-yellow-600 hover:text-yellow-800 font-medium">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                         </svg>
                                     </button>
                                 @endif
@@ -244,47 +247,87 @@
     </div>
 </div>
 
-<!-- Enhanced Reject Modal -->
-<div id="rejectModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+<!-- Admin Review Modal - Approve / Partial Reject / Total Reject -->
+<div id="reviewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
     <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full transform transition-all">
-            <form id="rejectForm" method="POST">
-                @csrf
-                <div class="p-6">
-                    <div class="flex items-center mb-4">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
-                        </div>
-                        <div class="ml-3">
-                            <h3 class="text-lg font-semibold text-gray-900">Reject Account</h3>
-                            <p class="text-sm text-gray-500">Please provide a reason for rejecting this account</p>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label for="rejection_reason" class="block text-sm font-medium text-gray-700 mb-2">
-                            Rejection Reason <span class="text-red-500">*</span>
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full transform transition-all max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-2xl font-bold text-gray-900">Account Review</h3>
+                    <button onclick="hideReviewModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <p id="review_user_name" class="text-sm text-gray-600 mt-2">User: <strong>-</strong></p>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <!-- Action Selection -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">Select Action</label>
+                    <div class="space-y-3">
+                        <!-- Approve -->
+                        <label class="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-green-50 transition">
+                            <input type="radio" name="action" value="approve" class="mt-1 mr-3" onchange="selectAction('approve')">
+                            <div>
+                                <p class="font-medium text-green-700">✓ Approve Account</p>
+                                <p class="text-sm text-gray-600">Account will be verified and resident can access the system.</p>
+                            </div>
                         </label>
-                        <textarea id="rejection_reason" name="rejection_reason" rows="4" 
-                                  class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                                  placeholder="Please provide a detailed reason for rejecting this account..."
-                                  required></textarea>
-                        <p class="mt-1 text-xs text-gray-500">This reason will be shown to the user when they try to login.</p>
+
+                        <!-- Partial Reject -->
+                        <label class="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-amber-50 transition">
+                            <input type="radio" name="action" value="partial" class="mt-1 mr-3" onchange="selectAction('partial')">
+                            <div>
+                                <p class="font-medium text-amber-700">⚠ Partial Rejection (Soft)</p>
+                                <p class="text-sm text-gray-600">Resident can login but must correct flagged information before full access.</p>
+                            </div>
+                        </label>
+
+                        <!-- Total Reject -->
+                        <label class="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-red-50 transition">
+                            <input type="radio" name="action" value="total" class="mt-1 mr-3" onchange="selectAction('total')">
+                            <div>
+                                <p class="font-medium text-red-700">✕ Total Rejection (Hard)</p>
+                                <p class="text-sm text-gray-600">Account is rejected. Resident cannot login and will see rejection message.</p>
+                            </div>
+                        </label>
                     </div>
                 </div>
-                
-                <div class="bg-gray-50 px-6 py-3 flex justify-end space-x-3">
-                    <button type="button" onclick="hideRejectModal()" 
-                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-150">
-                        Cancel
-                    </button>
-                    <button type="submit" 
-                            class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-150">
-                        <i class="fas fa-times mr-1"></i>
-                        Reject Account
-                    </button>
+
+                <!-- Reason Textarea (shown for partial and total reject) -->
+                <div id="reasonSection" class="hidden">
+                    <label for="review_reason" class="block text-sm font-medium text-gray-700 mb-2">
+                        Reason <span class="text-red-500">*</span>
+                    </label>
+                    <textarea id="review_reason" rows="4" 
+                              class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                              placeholder="Provide a detailed reason for this decision. This will be shown to the resident."
+                              minlength="10"
+                              maxlength="1000"></textarea>
+                    <p class="mt-1 text-xs text-gray-500">Minimum 10 characters, maximum 1000 characters.</p>
                 </div>
-            </form>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3 border-t border-gray-200">
+                <button type="button" onclick="hideReviewModal()" 
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-150">
+                    Cancel
+                </button>
+                <button type="button" onclick="submitReview('approve')" id="btn-approve"
+                        class="hidden px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-150">
+                    <i class="fas fa-check mr-1"></i>Approve
+                </button>
+                <button type="button" onclick="submitReview('partial')" id="btn-partial"
+                        class="hidden px-4 py-2 text-sm font-medium text-white bg-amber-600 border border-transparent rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors duration-150">
+                    <i class="fas fa-exclamation-circle mr-1"></i>Request Corrections
+                </button>
+                <button type="button" onclick="submitReview('total')" id="btn-total"
+                        class="hidden px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-150">
+                    <i class="fas fa-times mr-1"></i>Reject
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -463,6 +506,9 @@
 </div>
 
 <script>
+// ===== GLOBAL VARIABLES =====
+let currentReviewUserId = null;
+
 document.addEventListener('DOMContentLoaded', function() {
     // Filter Toggle
     const toggleBtn = document.getElementById('toggleFilters');
@@ -665,6 +711,8 @@ document.getElementById('imageModal').addEventListener('click', function(e) {
     }
 });
 
+// ===== NEW REVIEW MODAL FUNCTIONS =====
+
 // Close modals with Escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
@@ -672,7 +720,130 @@ document.addEventListener('keydown', function(e) {
         hideArchiveModal();
         hideViewModal();
         hideImageModal();
+        hideReviewModal();
     }
 });
+
+function showReviewModal(userId, userName) {
+    try {
+        currentReviewUserId = userId;
+        console.log('Opening review modal for user:', userId, userName);
+        document.getElementById('review_user_name').innerHTML = `User: <strong>${userName}</strong>`;
+        const modal = document.getElementById('reviewModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        } else {
+            console.error('reviewModal element not found');
+            alert('Error: Modal not found. Please refresh the page.');
+            return;
+        }
+        
+        // Reset form
+        document.querySelectorAll('input[name="action"]').forEach(el => el.checked = false);
+        document.getElementById('review_reason').value = '';
+        document.getElementById('reasonSection').classList.add('hidden');
+        document.getElementById('btn-approve').classList.add('hidden');
+        document.getElementById('btn-partial').classList.add('hidden');
+        document.getElementById('btn-total').classList.add('hidden');
+    } catch (error) {
+        console.error('Error in showReviewModal:', error);
+        alert('Error opening modal: ' + error.message);
+    }
+}
+
+function hideReviewModal() {
+    try {
+        const modal = document.getElementById('reviewModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+        document.body.style.overflow = 'auto';
+        currentReviewUserId = null;
+    } catch (error) {
+        console.error('Error in hideReviewModal:', error);
+    }
+}
+
+function selectAction(action) {
+    // Update button visibility
+    document.getElementById('btn-approve').classList.add('hidden');
+    document.getElementById('btn-partial').classList.add('hidden');
+    document.getElementById('btn-total').classList.add('hidden');
+    
+    if (action === 'approve') {
+        document.getElementById('btn-approve').classList.remove('hidden');
+        document.getElementById('reasonSection').classList.add('hidden');
+    } else if (action === 'partial') {
+        document.getElementById('btn-partial').classList.remove('hidden');
+        document.getElementById('reasonSection').classList.remove('hidden');
+    } else if (action === 'total') {
+        document.getElementById('btn-total').classList.remove('hidden');
+        document.getElementById('reasonSection').classList.remove('hidden');
+    }
+}
+
+function submitReview(action) {
+    if (!currentReviewUserId) {
+        alert('Error: User ID not found');
+        return;
+    }
+    
+    // Validate reason for partial and total reject
+    if ((action === 'partial' || action === 'total') && !document.getElementById('review_reason').value.trim()) {
+        alert('Please provide a reason for this decision.');
+        return;
+    }
+    
+    // Validate reason length
+    const reason = document.getElementById('review_reason').value.trim();
+    if ((action === 'partial' || action === 'total') && (reason.length < 10 || reason.length > 1000)) {
+        alert('Reason must be between 10 and 1000 characters.');
+        return;
+    }
+    
+    // Create form and submit
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.style.display = 'none';
+    
+    if (action === 'approve') {
+        form.action = `/admin/user-accounts/${currentReviewUserId}/approve`;
+    } else if (action === 'partial') {
+        form.action = `/admin/user-accounts/${currentReviewUserId}/partial-reject`;
+        const reasonInput = document.createElement('input');
+        reasonInput.type = 'hidden';
+        reasonInput.name = 'rejection_reason';
+        reasonInput.value = reason;
+        form.appendChild(reasonInput);
+    } else if (action === 'total') {
+        form.action = `/admin/user-accounts/${currentReviewUserId}/total-reject`;
+        const reasonInput = document.createElement('input');
+        reasonInput.type = 'hidden';
+        reasonInput.name = 'rejection_reason';
+        reasonInput.value = reason;
+        form.appendChild(reasonInput);
+    }
+    
+    // Add CSRF token
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = '_token';
+    csrfInput.value = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    form.appendChild(csrfInput);
+    
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// Close review modal when clicking outside
+const reviewModalElement = document.getElementById('reviewModal');
+if (reviewModalElement) {
+    reviewModalElement.addEventListener('click', function(e) {
+        if (e.target === this) {
+            hideReviewModal();
+        }
+    });
+}
 </script>
 @endsection

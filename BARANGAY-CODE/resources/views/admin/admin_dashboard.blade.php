@@ -173,10 +173,27 @@
                 <h3 class="text-lg font-bold text-gray-900 mb-1">Appointment Trends</h3>
                 <p class="text-xs text-gray-500">Reservation activity over time</p>
             </div>
-            <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                <i class="fas fa-chart-line text-blue-600"></i>
+            <div class="w-10 h-10 bg-yellow-50 rounded-lg flex items-center justify-center">
+                <i class="fas fa-chart-line text-yellow-600"></i>
             </div>
         </div>
+        
+        <!-- Filter Buttons -->
+        <div class="flex flex-wrap gap-2 mb-5">
+            <button type="button" class="appointment-filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-white text-gray-700 border border-gray-200 hover:border-yellow-300 hover:bg-yellow-50" data-filter="all">
+                All
+            </button>
+            <button type="button" class="appointment-filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-white text-gray-700 border border-gray-200 hover:border-yellow-300 hover:bg-yellow-50" data-filter="completed">
+                Completed
+            </button>
+            <button type="button" class="appointment-filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-white text-gray-700 border border-gray-200 hover:border-yellow-300 hover:bg-yellow-50" data-filter="cancelled">
+                Cancelled
+            </button>
+            <button type="button" class="appointment-filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-white text-gray-700 border border-gray-200 hover:border-yellow-300 hover:bg-yellow-50" data-filter="pending">
+                Pending
+            </button>
+        </div>
+        
         <div class="h-80">
             <canvas id="appointmentTrendsChart"></canvas>
         </div>
@@ -308,12 +325,13 @@
         
         // Appointment Trends Chart
         const appointmentTrendsCtx = document.getElementById('appointmentTrendsChart').getContext('2d');
+        const allDatasets = {!! json_encode($appointmentTrends['datasets']) !!};
         
-        const appointmentTrendsChart = new Chart(appointmentTrendsCtx, {
+        let appointmentTrendsChart = new Chart(appointmentTrendsCtx, {
             type: 'line',
             data: {
                 labels: {!! json_encode($appointmentTrends['labels']) !!},
-                datasets: {!! json_encode($appointmentTrends['datasets']) !!}.map(dataset => {
+                datasets: allDatasets.map(dataset => {
                     const colors = colorMapping[dataset.label] || { border: '#6B7280', bg: 'rgba(107, 114, 128, 0.1)' };
                     return {
                         ...dataset,
@@ -374,6 +392,56 @@
                 },
                 interaction: { mode: 'index', intersect: false }
             }
+        });
+        
+        // Appointment Trends Filter Buttons
+        const filterButtons = document.querySelectorAll('.appointment-filter-btn');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const filter = this.getAttribute('data-filter');
+                
+                // Update button styles
+                filterButtons.forEach(btn => {
+                    btn.classList.remove('bg-gradient-to-r', 'from-yellow-500', 'to-yellow-600', 'text-white', 'shadow-sm');
+                    btn.classList.add('bg-white', 'text-gray-700', 'border', 'border-gray-200');
+                });
+                this.classList.remove('bg-white', 'text-gray-700', 'border', 'border-gray-200');
+                this.classList.add('bg-gradient-to-r', 'from-yellow-500', 'to-yellow-600', 'text-white', 'shadow-sm');
+                
+                // Map filter value to dataset label
+                const filterMap = {
+                    'all': null,
+                    'completed': 'Completed',
+                    'cancelled': 'Cancelled',
+                    'pending': 'Pending'
+                };
+                
+                const targetLabel = filterMap[filter];
+                
+                // Filter datasets
+                let filteredDatasets = allDatasets
+                    .filter(dataset => targetLabel === null || dataset.label === targetLabel)
+                    .map(dataset => {
+                        const colors = colorMapping[dataset.label] || { border: '#6B7280', bg: 'rgba(107, 114, 128, 0.1)' };
+                        return {
+                            ...dataset,
+                            backgroundColor: colors.bg,
+                            borderColor: colors.border,
+                            borderWidth: 3,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: colors.border,
+                            pointBorderWidth: 2,
+                            tension: 0.4,
+                            fill: true
+                        };
+                    });
+                
+                // Update chart
+                appointmentTrendsChart.data.datasets = filteredDatasets;
+                appointmentTrendsChart.update();
+            });
         });
         
         // Inactive Users Chart - Yellow Color

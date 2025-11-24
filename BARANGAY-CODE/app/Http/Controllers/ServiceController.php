@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Service;
+use App\Models\ServiceArchive;
 use App\Models\Reservation;
 use App\Services\ServiceArchiveService;
 use Carbon\Carbon;
@@ -152,6 +153,24 @@ class ServiceController extends Controller
         $service = Service::onlyTrashed()->findOrFail($id);
         $service->restore();
         return redirect()->back()->with('status', 'Service unarchived');
+    }
+
+    public function restoreArchiveUnits(ServiceArchive $serviceArchive)
+    {
+        $service = $serviceArchive->service;
+        
+        if (!$service) {
+            return redirect()->back()->withErrors(['error' => 'Service not found']);
+        }
+
+        // Restore the capacity by adding back the archived units
+        $service->capacity_units += $serviceArchive->units_archived;
+        $service->save();
+
+        // Delete the archive record
+        $serviceArchive->delete();
+
+        return redirect()->back()->with('status', "Service units restored successfully. Capacity increased by {$serviceArchive->units_archived} units.");
     }
 }
 

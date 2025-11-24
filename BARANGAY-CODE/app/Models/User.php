@@ -38,6 +38,9 @@ class User extends Authenticatable
         'rejection_reason',
         'approved_at',
         'rejected_at',
+        'partially_rejected_at',
+        'partially_rejected_reason',
+        'resubmission_count',
     ];
 
     /**
@@ -68,6 +71,7 @@ class User extends Authenticatable
             'approved_at' => 'datetime',
             'rejected_at' => 'datetime',
             'archived_at' => 'datetime',
+            'partially_rejected_at' => 'datetime',
         ];
     }
 
@@ -93,6 +97,22 @@ class User extends Authenticatable
     public function isRejected(): bool
     {
         return $this->account_status === 'rejected';
+    }
+
+    /**
+     * Check if user account is partially rejected
+     */
+    public function isPartiallyRejected(): bool
+    {
+        return $this->account_status === 'partially_rejected';
+    }
+
+    /**
+     * Check if user can resubmit (partially rejected and not exceeding limit)
+     */
+    public function canResubmit(): bool
+    {
+        return $this->isPartiallyRejected() && ($this->resubmission_count ?? 0) < 3;
     }
 
     /**

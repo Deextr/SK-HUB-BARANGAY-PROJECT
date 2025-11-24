@@ -47,6 +47,13 @@
                 My Reservations
             </a>
 
+            <!-- Settings -->
+            <a href="{{ route('resident.settings.index') }}" 
+               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-600 {{ request()->routeIs('resident.settings.*') ? 'bg-yellow-600' : '' }}">
+                <i class="fas fa-cog w-6 mr-3"></i>
+                Settings
+            </a>
+
             
         </nav>
 

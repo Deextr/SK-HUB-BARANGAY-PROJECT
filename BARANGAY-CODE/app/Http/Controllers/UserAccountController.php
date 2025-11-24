@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class UserAccountController extends Controller
 {
@@ -16,7 +17,7 @@ class UserAccountController extends Controller
     {
         $query = User::where('is_admin', false)
                     ->where('is_archived', false)
-                    ->whereIn('account_status', ['pending', 'approved', 'rejected']);
+                    ->whereIn('account_status', ['pending', 'approved', 'partially_rejected', 'rejected']);
 
         // Apply search filter
         if ($request->filled('q')) {
@@ -124,6 +125,10 @@ class UserAccountController extends Controller
                 'approved_at' => $user->approved_at ? $user->approved_at->format('F d, Y \a\t g:i A') : null,
                 'rejected_at' => $user->rejected_at ? $user->rejected_at->format('F d, Y \a\t g:i A') : null,
                 'rejection_reason' => $user->rejection_reason,
+                'partially_rejected_at' => $user->partially_rejected_at ? $user->partially_rejected_at->format('F d, Y \a\t g:i A') : null,
+                'partially_rejected_reason' => $user->partially_rejected_reason,
+                'resubmission_count' => $user->resubmission_count ?? 0,
+                'can_resubmit' => $user->canResubmit(),
             ]);
         } catch (\Exception $e) {
             \Log::error('Error fetching user: ' . $e->getMessage());
@@ -180,12 +185,34 @@ class UserAccountController extends Controller
     }
 
     /**
-     * Reject a user account
+     * Partially reject a user account (soft rejection - allows resubmission)
      */
-    public function reject(Request $request, User $user)
+    public function partialReject(Request $request, User $user)
     {
         $request->validate([
-            'rejection_reason' => 'required|string|max:1000',
+            'rejection_reason' => 'required|string|min:10|max:1000',
+        ]);
+
+        $user->update([
+            'account_status' => 'partially_rejected',
+            'partially_rejected_reason' => $request->rejection_reason,
+            'partially_rejected_at' => now(),
+            'approved_at' => null,
+            'rejected_at' => null,
+            'rejection_reason' => null,
+        ]);
+
+        return redirect()->route('admin.user_accounts.index')
+            ->with('success', 'User account marked for corrections. Resident can now resubmit.');
+    }
+
+    /**
+     * Totally reject a user account (hard rejection - cannot login)
+     */
+    public function totalReject(Request $request, User $user)
+    {
+        $request->validate([
+            'rejection_reason' => 'required|string|min:10|max:1000',
         ]);
 
         $user->update([
@@ -193,10 +220,20 @@ class UserAccountController extends Controller
             'rejection_reason' => $request->rejection_reason,
             'rejected_at' => now(),
             'approved_at' => null,
+            'partially_rejected_at' => null,
+            'partially_rejected_reason' => null,
         ]);
 
         return redirect()->route('admin.user_accounts.index')
-            ->with('success', 'User account rejected successfully.');
+            ->with('success', 'User account rejected. Resident cannot login.');
+    }
+
+    /**
+     * Legacy reject method (redirects to totalReject for backward compatibility)
+     */
+    public function reject(Request $request, User $user)
+    {
+        return $this->totalReject($request, $user);
     }
 
     /**
@@ -239,6 +276,21 @@ class UserAccountController extends Controller
                     ->where('is_archived', false)
                     ->where('account_status', 'approved')
                     ->orderBy('approved_at', 'desc')
+                    ->paginate(6)
+                    ->withQueryString();
+
+        return view('admin.users', compact('users'));
+    }
+
+    /**
+     * Show partially rejected accounts only
+     */
+    public function partially_rejected()
+    {
+        $users = User::where('is_admin', false)
+                    ->where('is_archived', false)
+                    ->where('account_status', 'partially_rejected')
+                    ->orderBy('partially_rejected_at', 'desc')
                     ->paginate(6)
                     ->withQueryString();
 
@@ -289,5 +341,65 @@ class UserAccountController extends Controller
         
         return redirect()->route('admin.archives', ['tab' => 'users'])
             ->with('success', 'User account unarchived successfully.');
+    }
+
+    /**
+     * Resident resubmits corrected information after partial rejection
+     */
+    public function resubmit(Request $request)
+    {
+        $user = Auth::user();
+
+        // Verify user is partially rejected
+        if (!$user->isPartiallyRejected()) {
+            return redirect()->route('account.pending')
+                ->with('error', 'Your account is not pending corrections.');
+        }
+
+        // Validate resubmitted data
+        $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'birth_month' => 'required|numeric|between:1,12',
+            'birth_day' => 'required|numeric|between:1,31',
+            'birth_year' => 'required|numeric|min:1900|max:' . date('Y'),
+            'sex' => 'required|in:Male,Female',
+            'is_pwd' => 'nullable|boolean',
+            'id_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        // Handle optional file re-upload
+        if ($request->hasFile('id_image')) {
+            // Delete old image if exists
+            if ($user->id_image_path && Storage::disk('public')->exists($user->id_image_path)) {
+                Storage::disk('public')->delete($user->id_image_path);
+            }
+            $idImagePath = $request->file('id_image')->store('id_images', 'public');
+            $user->id_image_path = $idImagePath;
+        }
+
+        // Construct birth date from month, day, year
+        $birthDate = $request->birth_year . '-' . $request->birth_month . '-' . $request->birth_day;
+
+        // Update user info and reset to pending
+        $user->update([
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'birth_date' => $birthDate,
+            'sex' => $request->sex,
+            'is_pwd' => $request->filled('is_pwd') && $request->is_pwd == '1' ? 1 : 0,
+            'id_image_path' => $user->id_image_path,
+            'account_status' => 'pending',
+            'partially_rejected_at' => null,
+            'partially_rejected_reason' => null,
+        ]);
+
+        // Logout user and redirect to pending page
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('account.pending')
+            ->with('info', 'Your corrected information has been resubmitted for review. Please wait for admin approval.');
     }
 }

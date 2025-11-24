@@ -14,14 +14,6 @@
         <!-- Pending box -->
         <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md bg-opacity-100 relative">
 
-            <!-- Logo -->
-            <div class="flex justify-center mb-4 -mt-4">
-                <div class="w-28 h-28 rounded-full overflow-hidden shadow-xl">
-                    <img src="{{ asset('LOGO.png') }}" 
-                         alt="Barangay Logo" 
-                         class="w-full h-full object-cover scale-125">
-                </div>
-            </div>
 
             <!-- Pending Icon -->
             <div class="flex justify-center mb-6">

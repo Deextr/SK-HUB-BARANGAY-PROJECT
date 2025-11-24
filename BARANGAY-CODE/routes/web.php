@@ -8,6 +8,7 @@ use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserAccountController;
 use App\Http\Controllers\ArchivesController;
 use App\Http\Controllers\ReportsController;
+use App\Http\Controllers\ResidentSettingsController;
 use App\Http\Middleware\IsAdmin;
 use App\Http\Middleware\IsResident;
 use Illuminate\Support\Facades\Route;
@@ -30,6 +31,12 @@ Route::middleware('guest')->group(function () {
     
     // Pending account page
     Route::get('/account/pending', [AuthController::class, 'showPendingPage'])->name('account.pending');
+});
+
+// Authenticated routes for partially rejected users
+Route::middleware('auth')->group(function () {
+    // Partial rejection correction page
+    Route::get('/account/partial-rejection', [AuthController::class, 'showPartialRejectionPage'])->name('account.partial_rejection');
 });
 
 // Authenticated routes
@@ -68,6 +75,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/services/{service}', [ServiceController::class, 'update'])->name('admin.services.update');
         Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('admin.services.destroy');
         Route::post('/services/{service}/archive-units', [ServiceController::class, 'archiveUnits'])->name('admin.services.archive_units');
+        Route::post('/service-archives/{serviceArchive}/restore', [ServiceController::class, 'restoreArchiveUnits'])->name('admin.service_archives.restore');
         Route::get('/services/archives', [ServiceController::class, 'archives'])->name('admin.services.archives');
         Route::get('/archives', [ArchivesController::class, 'index'])->name('admin.archives');
         // old aliases removed; single entry now serves combined archives
@@ -95,10 +103,13 @@ Route::middleware('auth')->group(function () {
         // User Account Status Management
         Route::post('/user-accounts/{user}/approve', [UserAccountController::class, 'approve'])->name('admin.user_accounts.approve');
         Route::post('/user-accounts/{user}/reject', [UserAccountController::class, 'reject'])->name('admin.user_accounts.reject');
+        Route::post('/user-accounts/{user}/partial-reject', [UserAccountController::class, 'partialReject'])->name('admin.user_accounts.partial_reject');
+        Route::post('/user-accounts/{user}/total-reject', [UserAccountController::class, 'totalReject'])->name('admin.user_accounts.total_reject');
         Route::post('/user-accounts/{user}/archive', [UserAccountController::class, 'archive'])->name('admin.user_accounts.archive');
         Route::post('/user-accounts/{user}/unarchive', [UserAccountController::class, 'unarchive'])->name('admin.user_accounts.unarchive');
         Route::get('/user-accounts/filter/pending', [UserAccountController::class, 'pending'])->name('admin.user_accounts.pending');
         Route::get('/user-accounts/filter/approved', [UserAccountController::class, 'approved'])->name('admin.user_accounts.approved');
+        Route::get('/user-accounts/filter/partially-rejected', [UserAccountController::class, 'partially_rejected'])->name('admin.user_accounts.partially_rejected');
         Route::get('/user-accounts/filter/rejected', [UserAccountController::class, 'rejected'])->name('admin.user_accounts.rejected');
         
         // Legacy users route for backward compatibility
@@ -117,6 +128,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', function () {
             return view('resident.resident_dashboard');
         })->name('resident.dashboard');
+
+        // Account correction flow (for partially rejected accounts)
+        Route::post('/account/resubmit', [UserAccountController::class, 'resubmit'])->name('resident.account.resubmit');
 
         // Booking History removed
 
@@ -149,6 +163,10 @@ Route::middleware('auth')->group(function () {
 
         // History
         Route::get('/reservation-history', [ReservationController::class, 'history'])->name('resident.reservation.history');
+
+        // Settings
+        Route::get('/settings', [ResidentSettingsController::class, 'index'])->name('resident.settings.index');
+        Route::post('/settings/update-password', [ResidentSettingsController::class, 'updatePassword'])->name('resident.settings.update-password');
     });
 
     // Default redirect after login based on role
