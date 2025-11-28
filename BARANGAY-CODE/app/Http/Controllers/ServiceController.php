@@ -9,6 +9,7 @@ use App\Services\ServiceArchiveService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class ServiceController extends Controller
 {
