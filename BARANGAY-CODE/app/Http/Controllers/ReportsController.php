@@ -331,39 +331,39 @@ class ReportsController extends Controller
             $allReservations = $reservationsQuery->get();
             $allUsers = User::where('account_status', 'approved')->get();
 
+            $totalUsers = $allUsers->count();
+            $activeUsers = $allReservations->pluck('user_id')->unique()->count();
+
             return [
                 'engagement_overview' => [
-                    'total_users' => $allUsers->count(),
-                    'active_users' => $allReservations->pluck('user_id')->unique()->count(),
-                    'engagement_rate' => ($allReservations->pluck('user_id')->unique()->count() / $allUsers->count()) * 100,
+                    'total_users' => $totalUsers,
+                    'active_users' => $activeUsers,
+                    'engagement_rate' => $totalUsers > 0 ? ($activeUsers / $totalUsers) * 100 : 0,
                     'total_reservations' => $allReservations->count(),
-                    'avg_reservations_per_user' => $allReservations->pluck('user_id')->unique()->count() > 0 ? 
-                        $allReservations->count() / $allReservations->pluck('user_id')->unique()->count() : 0
+                    'avg_reservations_per_user' => $activeUsers > 0 ? $allReservations->count() / $activeUsers : 0
                 ],
                 
                 'user_segments' => [
-                    'super_users' => $this->getUserSegment($allReservations, 5, PHP_INT_MAX), // 5+ reservations
-                    'regular_users' => $this->getUserSegment($allReservations, 2, 4), // 2-4 reservations
-                    'occasional_users' => $this->getUserSegment($allReservations, 1, 1), // 1 reservation
+                    'super_users' => $this->getUserSegment($allReservations, 5, PHP_INT_MAX),
+                    'regular_users' => $this->getUserSegment($allReservations, 2, 4),
+                    'occasional_users' => $this->getUserSegment($allReservations, 1, 1),
                     'inactive_users' => $allUsers->whereNotIn('id', $allReservations->pluck('user_id'))->values()
                 ],
                 
-                
-                   'service_preferences' => $allReservations->groupBy('user_id')
+                // safer grouping for preferred services (avoid "service.name" string key)
+                'service_preferences' => $allReservations->groupBy('user_id')
                     ->map(function($userReservations, $userId) {
                         $user = $userReservations->first()->user;
                         return [
                             'user_id' => $userId,
-                            'user_name' => $user ? $user->first_name . ' ' . $user->last_name : 'Unknown',
+                            'user_name' => $user ? ($user->first_name ?? $user->name) . ' ' . ($user->last_name ?? '') : 'Unknown',
                             'total_reservations' => $userReservations->count(),
-                            'preferred_services' => $userReservations->groupBy('service.name')
-                                ->map->count()
-                                ->sortDesc()
-                                ->take(3),
+                            'preferred_services' => $userReservations->groupBy(function($r) {
+                                return $r->service ? $r->service->name : 'Unknown';
+                            })->map->count()->sortDesc()->take(3),
                             'last_activity' => $userReservations->sortByDesc('reservation_date')->first()->reservation_date ?? null
                         ];
                     })->sortByDesc('total_reservations')->values()->take(10),
-                    
             ];
         }
         private function getUserSegment($reservations, $minReservations, $maxReservations)
@@ -389,7 +389,7 @@ class ReportsController extends Controller
                 })->values();
         }
 
-
+        
     /**
      * Export reports as CSV with proper formatting
      */
@@ -398,7 +398,8 @@ class ReportsController extends Controller
         $dateRange = $request->get('date_range', 'all');
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
-        $reportType = $request->get('report_type', 'all');
+        // Normalize report type to avoid case-sensitivity and ensure correct filtering
+        $reportType = strtolower($request->get('report_type', 'all') ?? 'all');
         
         [$calculatedStartDate, $calculatedEndDate] = $this->calculateDateRange($dateRange, $startDate, $endDate);
         
@@ -445,22 +446,27 @@ class ReportsController extends Controller
                     'Status'
                 ], ',', '"');
                 
-                // Data rows
+                // Data rows (sanitize all text fields to strip any HTML)
                 foreach ($reservationsData as $reservation) {
-                    $date = $reservation->reservation_date instanceof \DateTime 
+                    $date = $reservation->reservation_date instanceof \DateTime
                         ? $reservation->reservation_date->format('Y-m-d')
                         : \Carbon\Carbon::parse($reservation->reservation_date)->format('Y-m-d');
-                    
+
                     $startTime = \Carbon\Carbon::parse($reservation->start_time)->format('H:i');
                     $endTime = \Carbon\Carbon::parse($reservation->end_time)->format('H:i');
-                    
+
+                    $reference = isset($reservation->reference_no) ? strip_tags((string)$reservation->reference_no) : '';
+                    $residentName = $reservation->user ? strip_tags((string)$reservation->user->name) : 'N/A';
+                    $serviceName = $reservation->service ? strip_tags((string)$reservation->service->name) : 'N/A';
+                    $status = isset($reservation->status) ? strip_tags((string)ucfirst($reservation->status)) : '';
+
                     fputcsv($file, [
-                        $reservation->reference_no ?? '',
-                        $reservation->user ? $reservation->user->name : 'N/A',
-                        $reservation->service ? $reservation->service->name : 'N/A',
+                        $reference,
+                        $residentName,
+                        $serviceName,
                         $date,
                         $startTime . ' - ' . $endTime,
-                        ucfirst($reservation->status ?? ''),
+                        $status,
                     ], ',', '"');
                 }
                 fputcsv($file, [], ',', '"');
@@ -473,7 +479,13 @@ class ReportsController extends Controller
                 fputcsv($file, ['Generated: ' . now()->format('Y-m-d H:i:s')], ',', '"');
                 fputcsv($file, [], ',', '"');
                 
+                // Ensure we get an iterable collection (avoid paginator rendering or view helpers)
                 $servicesData = $this->getServicesReport($calculatedStartDate, $calculatedEndDate);
+                if ($servicesData instanceof LengthAwarePaginator) {
+                    $servicesIterable = collect($servicesData->items());
+                } else {
+                    $servicesIterable = collect($servicesData);
+                }
                 
                 // Column Headers with proper spacing
                 fputcsv($file, [
@@ -485,15 +497,23 @@ class ReportsController extends Controller
                     'Status'
                 ], ',', '"');
                 
-                // Data rows
-                foreach ($servicesData as $data) {
+                // Data rows (sanitize fields)
+                foreach ($servicesIterable as $data) {
+                    $svc = $data['service'] ?? null;
+                    $name = $svc ? strip_tags((string)$svc->name) : '';
+                    $desc = $svc ? strip_tags((string)($svc->description ?? 'N/A')) : 'N/A';
+                    $usage = $data['usage_count'] ?? 0;
+                    $unique = $data['unique_users'] ?? 0;
+                    $qty = ($svc && isset($svc->capacity_units)) ? strip_tags((string)($svc->capacity_units . ' units')) : '0 units';
+                    $status = $svc && isset($svc->is_active) ? ($svc->is_active ? 'Active' : 'Inactive') : 'Inactive';
+
                     fputcsv($file, [
-                        $data['service']->name ?? '',
-                        $data['service']->description ?? 'N/A',
-                        $data['usage_count'] ?? 0,
-                        $data['unique_users'] ?? 0,
-                        ($data['service']->capacity_units ?? 0) . ' units',
-                        $data['service']->is_active ? 'Active' : 'Inactive',
+                        $name,
+                        $desc,
+                        $usage,
+                        $unique,
+                        $qty,
+                        $status,
                     ], ',', '"');
                 }
             }
@@ -523,9 +543,18 @@ class ReportsController extends Controller
                     ], ',', '"');
 
                     foreach ($reasonsData['service_reason_mapping'] as $serviceName => $info) {
+                        // sanitize service name and reason strings
+                        $serviceNameClean = strip_tags((string)$serviceName);
                         $topReasons = $info['reason_breakdown']->toArray();
-                        $otherReasons = is_array($info['other_reasons']) ? $info['other_reasons'] : $info['other_reasons']->toArray();
-                        $otherReasonsStr = implode(' | ', $otherReasons);
+                        // some implementations store other_reasons; guard and sanitize
+                        $otherReasonsArr = [];
+                        if (isset($info['other_reasons'])) {
+                            $otherReasons = is_array($info['other_reasons']) ? $info['other_reasons'] : (method_exists($info['other_reasons'], 'toArray') ? $info['other_reasons']->toArray() : (array)$info['other_reasons']);
+                            foreach ($otherReasons as $or) {
+                                $otherReasonsArr[] = strip_tags((string)$or);
+                            }
+                        }
+                        $otherReasonsStr = implode(' | ', $otherReasonsArr);
 
                         // Prepare age groups data
                         $ageBuckets = ['Under 18' => 0, '18-29' => 0, '30-49' => 0, '50+' => 0];
@@ -554,9 +583,9 @@ class ReportsController extends Controller
                         // If there are no top reasons, output a single row for the service
                         if (count($topReasons) === 0) {
                             fputcsv($file, [
-                                $serviceName, 
-                                $info['total_usage'], 
-                                'No specific reasons recorded', 
+                                $serviceNameClean,
+                                $info['total_usage'],
+                                'No specific reasons recorded',
                                 0,
                                 $ageBuckets['Under 18'],
                                 $ageBuckets['18-29'],
@@ -573,10 +602,11 @@ class ReportsController extends Controller
                         // Output each reason as a separate row
                         $firstRow = true;
                         foreach ($topReasons as $reason => $count) {
+                            $reasonClean = strip_tags((string)$reason);
                             fputcsv($file, [
-                                $firstRow ? $serviceName : '', 
-                                $firstRow ? $info['total_usage'] : '', 
-                                $reason, 
+                                $firstRow ? $serviceNameClean : '',
+                                $firstRow ? $info['total_usage'] : '',
+                                $reasonClean,
                                 $count,
                                 $firstRow ? $ageBuckets['Under 18'] : '',
                                 $firstRow ? $ageBuckets['18-29'] : '',
@@ -654,8 +684,8 @@ class ReportsController extends Controller
                 fputcsv($file, ['Hourly Usage: Hour', 'Total Reservations', 'Utilization Rate (%)', 'Top Services (name:count)'], ',', '"');
                 foreach (($peakData['hourly_usage'] ?? []) as $hour => $info) {
                     $servicesUsed = is_array($info['services_used']) || $info['services_used'] instanceof \Illuminate\Support\Collection ? $info['services_used'] : collect($info['services_used']);
-                    $servicesStr = $servicesUsed->map(function($count, $name) { return $name . ':' . $count; })->values()->all();
-                    fputcsv($file, [$hour, $info['total_reservations'] ?? 0, round($info['utilization_rate'] ?? 0, 1), implode(' | ', $servicesStr)], ',', '"');
+                    $servicesStr = $servicesUsed->map(function($count, $name) { return strip_tags((string)$name) . ':' . $count; })->values()->all();
+                    fputcsv($file, [strip_tags((string)$hour), $info['total_reservations'] ?? 0, round($info['utilization_rate'] ?? 0, 1), implode(' | ', $servicesStr)], ',', '"');
                 }
                 fputcsv($file, [], ',', '"');
 
@@ -669,9 +699,10 @@ class ReportsController extends Controller
                 // Service Time Preferences
                 fputcsv($file, ['Service Time Preferences: Service', 'Peak Hours (hour:count)', 'Average Duration (mins)'], ',', '"');
                 foreach (($peakData['service_time_preferences'] ?? []) as $serviceName => $prefs) {
+                    $serviceNameClean = strip_tags((string)$serviceName);
                     $peakHours = is_array($prefs['peak_hours']) || $prefs['peak_hours'] instanceof \Illuminate\Support\Collection ? $prefs['peak_hours'] : collect($prefs['peak_hours']);
-                    $peakStr = $peakHours->map(function($count, $hour) { return $hour . ':' . $count; })->values()->all();
-                    fputcsv($file, [$serviceName, implode(' | ', $peakStr), round($prefs['average_duration'] ?? 0, 1)], ',', '"');
+                    $peakStr = $peakHours->map(function($count, $hour) { return strip_tags((string)$hour) . ':' . $count; })->values()->all();
+                    fputcsv($file, [$serviceNameClean, implode(' | ', $peakStr), round($prefs['average_duration'] ?? 0, 1)], ',', '"');
                 }
                 fputcsv($file, [], ',', '"');
 
@@ -703,42 +734,23 @@ class ReportsController extends Controller
                 fputcsv($file, ['USER SEGMENTS'], ',', '"');
                 fputcsv($file, ['Segment', 'User Count', 'Percentage'], ',', '"');
                 
+                // Find the CSV section where $totalSegmented and percentage rows are written and replace with this block:
                 $superUsers = count($engagementData['user_segments']['super_users']);
                 $regularUsers = count($engagementData['user_segments']['regular_users']);
                 $occasionalUsers = count($engagementData['user_segments']['occasional_users']);
                 $inactiveUsers = count($engagementData['user_segments']['inactive_users']);
                 $totalSegmented = $superUsers + $regularUsers + $occasionalUsers + $inactiveUsers;
-                
-                fputcsv($file, ['Super Users (5+ reservations)', $superUsers, round(($superUsers/$totalSegmented)*100, 2) . '%'], ',', '"');
-                fputcsv($file, ['Regular Users (2-4 reservations)', $regularUsers, round(($regularUsers/$totalSegmented)*100, 2) . '%'], ',', '"');
-                fputcsv($file, ['Occasional Users (1 reservation)', $occasionalUsers, round(($occasionalUsers/$totalSegmented)*100, 2) . '%'], ',', '"');
-                fputcsv($file, ['Inactive Users (0 reservations)', $inactiveUsers, round(($inactiveUsers/$totalSegmented)*100, 2) . '%'], ',', '"');
-                fputcsv($file, [], ',', '"');
-                
-                // Demographic Engagement
-                fputcsv($file, ['DEMOGRAPHIC ENGAGEMENT'], ',', '"');
-                fputcsv($file, ['Demographic', 'Total Users', 'Active Users', 'Engagement Rate', 'Avg Reservations'], ',', '"');
-                
-                foreach ($engagementData['demographic_engagement']['by_age'] as $ageGroup => $data) {
-                    fputcsv($file, [
-                        'Age: ' . $ageGroup,
-                        $data['total_users'],
-                        $data['active_users'],
-                        round($data['engagement_rate'], 2) . '%',
-                        round($data['avg_reservations'], 2)
-                    ], ',', '"');
-                }
-                
-                foreach ($engagementData['demographic_engagement']['by_gender'] as $gender => $data) {
-                    fputcsv($file, [
-                        'Gender: ' . $gender,
-                        $data['total_users'],
-                        $data['active_users'],
-                        round($data['engagement_rate'], 2) . '%',
-                        'N/A'
-                    ], ',', '"');
-                }
-                
+
+                // avoid division by zero when there are no users
+                $superPct = $totalSegmented > 0 ? round(($superUsers / $totalSegmented) * 100, 2) . '%' : '0%';
+                $regularPct = $totalSegmented > 0 ? round(($regularUsers / $totalSegmented) * 100, 2) . '%' : '0%';
+                $occasionalPct = $totalSegmented > 0 ? round(($occasionalUsers / $totalSegmented) * 100, 2) . '%' : '0%';
+                $inactivePct = $totalSegmented > 0 ? round(($inactiveUsers / $totalSegmented) * 100, 2) . '%' : '0%';
+
+                fputcsv($file, ['Super Users (5+ reservations)', $superUsers, $superPct], ',', '"');
+                fputcsv($file, ['Regular Users (2-4 reservations)', $regularUsers, $regularPct], ',', '"');
+                fputcsv($file, ['Occasional Users (1 reservation)', $occasionalUsers, $occasionalPct], ',', '"');
+                fputcsv($file, ['Inactive Users (0 reservations)', $inactiveUsers, $inactivePct], ',', '"');
                 fputcsv($file, [], ',', '"');
                 
                 // Top Engaged Users
@@ -747,35 +759,39 @@ class ReportsController extends Controller
                 
                 $rank = 1;
                 foreach ($engagementData['service_preferences']->take(20) as $user) {
+                    $userName = isset($user['user_name']) ? strip_tags((string)$user['user_name']) : 'Unknown';
+                    $preferred = 'N/A';
+                    if (isset($user['preferred_services'])) {
+                        if (is_array($user['preferred_services'])) {
+                            $keys = array_keys($user['preferred_services']);
+                            $preferred = isset($keys[0]) ? strip_tags((string)$keys[0]) : 'N/A';
+                        } elseif (method_exists($user['preferred_services'], 'keys')) {
+                            $preferred = strip_tags((string)($user['preferred_services']->keys()->first() ?? 'N/A'));
+                        }
+                    }
                     fputcsv($file, [
                         $rank++,
-                        $user['user_name'],
-                        $user['total_reservations'],
-                        $user['preferred_services']->keys()->first() ?? 'N/A',
-                        $user['last_activity']
+                        $userName,
+                        $user['total_reservations'] ?? 0,
+                        $preferred,
+                        $user['last_activity'] ?? ''
                     ], ',', '"');
                 }
                 
                 fputcsv($file, [], ',', '"');
                 
-                // Retention Analysis
-                fputcsv($file, ['RETENTION ANALYSIS'], ',', '"');
-                fputcsv($file, ['Metric', 'Value'], ',', '"');
-                fputcsv($file, ['New Users (Last 3 Months)', $engagementData['retention_analysis']['new_user_retention']['new_users_last_3_months']], ',', '"');
-                fputcsv($file, ['Active in Last Month', $engagementData['retention_analysis']['new_user_retention']['active_in_last_month']], ',', '"');
-                fputcsv($file, ['New User Retention Rate', round($engagementData['retention_analysis']['new_user_retention']['retention_rate'], 2) . '%'], ',', '"');
-                
                 // Super Users Detailed List
-                fputcsv($file, [], ',', '"');
                 fputcsv($file, ['SUPER USERS DETAILED LIST'], ',', '"');
                 fputcsv($file, ['User Name', 'Reservation Count', 'Preferred Service', 'Last Activity'], ',', '"');
                 
                 foreach ($engagementData['user_segments']['super_users'] as $user) {
+                    $userName = isset($user['name']) ? strip_tags((string)$user['name']) : 'Unknown';
+                    $prefService = isset($user['preferred_service']) ? strip_tags((string)$user['preferred_service']) : 'N/A';
                     fputcsv($file, [
-                        $user['name'],
-                        $user['reservation_count'],
-                        $user['preferred_service'],
-                        $user['last_activity']
+                        $userName,
+                        $user['reservation_count'] ?? 0,
+                        $prefService,
+                        $user['last_activity'] ?? ''
                     ], ',', '"');
                 }
             }

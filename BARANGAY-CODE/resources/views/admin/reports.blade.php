@@ -69,11 +69,11 @@
         </div>
         <div class="px-6 py-4">
             <div class="flex flex-wrap gap-3">
-                <a href="{{ route('admin.reports.export.csv', ['date_range' => $dateRange, 'start_date' => $startDate, 'end_date' => $endDate, 'report_type' => isset($reportType) ? $reportType : 'all']) }}" 
+                <a id="export_csv" data-base="{{ route('admin.reports.export.csv') }}" href="{{ route('admin.reports.export.csv', ['date_range' => $dateRange, 'start_date' => $startDate, 'end_date' => $endDate, 'report_type' => isset($reportType) ? $reportType : 'all']) }}" 
                    class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-medium">
                     <i class="fas fa-file-csv mr-2"></i>Export as CSV
                 </a>
-                <a href="{{ route('admin.reports.export.pdf', ['date_range' => $dateRange, 'start_date' => $startDate, 'end_date' => $endDate, 'report_type' => isset($reportType) ? $reportType : 'all']) }}" 
+                <a id="export_pdf" data-base="{{ route('admin.reports.export.pdf') }}" href="{{ route('admin.reports.export.pdf', ['date_range' => $dateRange, 'start_date' => $startDate, 'end_date' => $endDate, 'report_type' => isset($reportType) ? $reportType : 'all']) }}" 
                    class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-medium">
                     <i class="fas fa-file-pdf mr-2"></i>Export as PDF
                 </a>
@@ -790,6 +790,36 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Update export links when filters change (so user doesn't need to submit to export current selection)
+    const exportCsv = document.getElementById('export_csv');
+    const exportPdf = document.getElementById('export_pdf');
+    function updateExportLinks() {
+        const rt = encodeURIComponent(reportTypeSelect.value || 'all');
+        const dr = encodeURIComponent(dateRangeSelect.value || 'all');
+        const sd = encodeURIComponent(document.getElementById('start_date').value || '');
+        const ed = encodeURIComponent(document.getElementById('end_date').value || '');
+
+        if (exportCsv) {
+            const base = exportCsv.getAttribute('data-base');
+            exportCsv.href = base + '?report_type=' + rt + '&date_range=' + dr + (sd ? '&start_date=' + sd : '') + (ed ? '&end_date=' + ed : '');
+        }
+        if (exportPdf) {
+            const base = exportPdf.getAttribute('data-base');
+            exportPdf.href = base + '?report_type=' + rt + '&date_range=' + dr + (sd ? '&start_date=' + sd : '') + (ed ? '&end_date=' + ed : '');
+        }
+    }
+
+    // attach change listeners
+    ['change', 'input'].forEach(evt => {
+        reportTypeSelect.addEventListener(evt, updateExportLinks);
+        dateRangeSelect.addEventListener(evt, updateExportLinks);
+        document.getElementById('start_date').addEventListener(evt, updateExportLinks);
+        document.getElementById('end_date').addEventListener(evt, updateExportLinks);
+    });
+
+    // initialize on page load
+    updateExportLinks();
 });
 </script>
 @endsection

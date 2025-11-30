@@ -100,7 +100,6 @@
                         <th>Service</th>
                         <th>Total Usage</th>
                         <th>Top Reasons</th>
-                        <th>Other Reasons (samples)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -111,11 +110,6 @@
                             <td>
                                 @foreach($info['reason_breakdown']->take(5) as $reason => $count)
                                     <div>{{ $reason }}: {{ $count }}</div>
-                                @endforeach
-                            </td>
-                            <td>
-                                @foreach($info['other_reasons']->take(3) as $o)
-                                    <div>{{ $o }}</div>
                                 @endforeach
                             </td>
                         </tr>
