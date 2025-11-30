@@ -19,7 +19,6 @@
                             <option value="all" {{ isset($reportType) && $reportType == 'all' ? 'selected' : '' }}>All Reports</option>
                             <option value="reservations" {{ isset($reportType) && $reportType == 'reservations' ? 'selected' : '' }}>Reservations Report</option>
                             <option value="services" {{ isset($reportType) && $reportType == 'services' ? 'selected' : '' }}>Services Report</option>
-                            <option value="reasons" {{ isset($reportType) && $reportType == 'reasons' ? 'selected' : '' }}>Reasons Report</option>
                             <option value="peak" {{ isset($reportType) && $reportType == 'peak' ? 'selected' : '' }}>Peak Usage Report</option>
                             <option value="engagement" {{ isset($reportType) && $reportType == 'engagement' ? 'selected' : '' }}>User Engagement Report</option>
                         </select>
@@ -87,7 +86,7 @@
             <h3 class="text-lg font-semibold text-gray-800">Reservations Report</h3>
             <p class="text-sm text-gray-500 mt-1">
                 @if($calculatedStartDate && $calculatedEndDate)
-                    Period: {{ $calculatedStartDate->format('M d, Y') }} - {{ $calculatedEndDate->format('M d, Y') }}
+                    Period: {{ $calculatedStartDate->format('M d, Y') }} to {{ $calculatedEndDate->format('M d, Y') }}
                 @else
                     Period: All Time
                 @endif
@@ -97,20 +96,30 @@
                 if (isset($reservationsData)) {
                     $reservationsItems = method_exists($reservationsData, 'items') ? $reservationsData->items() : (is_array($reservationsData) ? $reservationsData : $reservationsData);
                     $reservationsCol = collect($reservationsItems);
-                    $totalRecords = method_exists($reservationsData, 'total') ? $reservationsData->total() : $reservationsCol->count();
+                    $totalRecords = $reservationsCol->count();
                     $pending = $reservationsCol->where('status', 'pending')->count();
-                    $confirmed = $reservationsCol->where('status', 'confirmed')->count();
                     $completed = $reservationsCol->where('status', 'completed')->count();
+                    $cancelled = $reservationsCol->where('status', 'cancelled')->count();
                 }
             @endphp
-            <div class="px-6 pb-2 py-2">
-                <div class="text-sm text-gray-700">
-                    <p>
-                    Summary: <strong>{{ $totalRecords ?? 0 }}</strong> 
-                    total — <span class="text-amber-600">Pending: {{ $pending ?? 0 }}</span>,
-                     <span class="text-green-600">Confirmed: {{ $confirmed ?? 0 }}</span>, 
-                     <span class="text-green-600">Completed: {{ $completed ?? 0 }}</span>
-                     </p>
+            <div class="px-6 py-3 bg-gray-50 border-t border-gray-200">
+                <div class="grid grid-cols-4 gap-4">
+                    <div>
+                        <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Total Reservations</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ $totalRecords ?? 0 }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-amber-600 uppercase tracking-wide font-semibold">Pending</p>
+                        <p class="text-2xl font-bold text-amber-600 mt-1">{{ $pending ?? 0 }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-green-600 uppercase tracking-wide font-semibold">Completed</p>
+                        <p class="text-2xl font-bold text-green-600 mt-1">{{ $completed ?? 0 }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-red-600 uppercase tracking-wide font-semibold">Cancelled</p>
+                        <p class="text-2xl font-bold text-red-600 mt-1">{{ $cancelled ?? 0 }}</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -173,7 +182,7 @@
             <h3 class="text-lg font-semibold text-gray-800">Services Report</h3>
             <p class="text-sm text-gray-500 mt-1">
                 @if($calculatedStartDate && $calculatedEndDate)
-                    Period: {{ $calculatedStartDate->format('M d, Y') }} - {{ $calculatedEndDate->format('M d, Y') }}
+                    Period: {{ $calculatedStartDate->format('M d, Y') }} to {{ $calculatedEndDate->format('M d, Y') }}
                 @else
                     Period: All Time
                 @endif
@@ -202,16 +211,29 @@
                 }
             @endphp
 
-            <div class="px-6 pb-2 py-2">
-                <div class="text-sm text-gray-700">
-                    <p>
-                        Summary:
-                        <strong>{{ $servicesCount ?? 0 }}</strong> services —
-                        Total Usage: <strong>{{ number_format($totalUsage ?? 0) }}</strong> —
-                        Unique Users: <strong>{{ number_format($totalUniqueUsers ?? 0) }}</strong> —
-                        Top Service: <strong>{{ $topServiceName ?? '—' }}</strong> (<strong>{{ $topServiceCount ?? 0 }}</strong>) —
-                        Avg Usage/service: <strong>{{ $avgUsage ?? 0 }}</strong>
-                    </p>
+            <div class="px-6 py-3 bg-gray-50 border-t border-gray-200">
+                <div class="grid grid-cols-5 gap-4">
+                    <div>
+                        <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Total Services</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ $servicesCount ?? 0 }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Total Usage</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ number_format($totalUsage ?? 0) }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Unique Users</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ number_format($totalUniqueUsers ?? 0) }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Top Service</p>
+                        <p class="text-sm font-bold text-gray-900 mt-1">{{ $topServiceName ?? '—' }}</p>
+                        <p class="text-xs text-gray-500">({{ $topServiceCount ?? 0 }} uses)</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Avg Usage/Service</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ $avgUsage ?? 0 }}</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -260,167 +282,13 @@
       
     </div>
 
-    <!-- Reasons Report Table -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 {{ (!isset($reportType) || $reportType == 'all' || $reportType == 'reasons') ? '' : 'hidden' }}" id="reasons-report">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-800">Reservation Reasons Analysis</h3>
-            <p class="text-sm text-gray-500 mt-1">
-                @if($calculatedStartDate && $calculatedEndDate)
-                    Period: {{ $calculatedStartDate->format('M d, Y') }} - {{ $calculatedEndDate->format('M d, Y') }}
-                @else
-                    Period: All Time
-                @endif
-            </p>
-             {{-- Quick summary for reasons --}}
-                 @php
-                     if (isset($reasonsData)) {
-                        $serviceReasonCount = is_array($reasonsData['service_reason_mapping']) ? count($reasonsData['service_reason_mapping']) : $reasonsData['service_reason_mapping']->count();
-                            $uniqueReasons = 0;
-                              $totalReasonEntries = 0;
-                                if (isset($reasonsData['service_reason_mapping'])) {
-                                    foreach ($reasonsData['service_reason_mapping'] as $srv => $info) {
-                                        $totalReasonEntries += ($info['total_usage'] ?? 0);
-                                        $uniqueReasons += is_array($info['reason_breakdown']) ? count($info['reason_breakdown']) : (method_exists($info['reason_breakdown'], 'count') ? $info['reason_breakdown']->count() : 0);
-                                        }
-                                    }
-                                }
-                 @endphp
-                <div class="px-6 pb-2 py-2">
-                    <div class="text-sm text-gray-700">
-                        <p>
-                        Summary: <strong>{{ $serviceReasonCount ?? 0 }}</strong> 
-                        services reported reasons — Unique Reasons: <strong>{{ $uniqueReasons ?? 0 }}</strong> — 
-                        Total Reasoned Reservations: <strong>{{ $totalReasonEntries ?? 0 }}</strong>
-                        </p>        
-                    </div>
-                </div>
-        </div>
-        <div class="px-6 py-4">
-            @if(isset($reasonsData) && count($reasonsData['service_reason_mapping']) > 0)
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Service</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Total Usage</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Top Reasons</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Other Reasons (Samples)</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @foreach($reasonsData['service_reason_mapping'] as $serviceName => $info)
-                                <tr class="hover:bg-gray-50 transition">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $serviceName }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $info['total_usage'] }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-700">
-                                        @foreach($info['reason_breakdown']->take(5) as $reason => $count)
-                                            <div>{{ $reason }}: <strong>{{ $count }}</strong></div>
-                                        @endforeach
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-700">
-                                        @if(count($info['other_reasons']) > 0)
-                                            @foreach($info['other_reasons']->take(3) as $o)
-                                                <div>{{ $o }}</div>
-                                            @endforeach
-                                        @else
-                                            <div class="text-gray-500">—</div>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Additional Tables for Detailed Analysis -->
-                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Reason Demographics Table -->
-                    <div class="bg-white rounded-lg border border-gray-200">
-                        <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
-                            <h4 class="text-sm font-semibold text-gray-800">Reason Demographics</h4>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Reason</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Total Users</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">PWD %</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Gender Split</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    @foreach($reasonsData['reason_demographics'] as $reason => $data)
-                                        <tr class="hover:bg-gray-50 transition">
-                                            <td class="px-4 py-2 text-sm text-gray-700">{{ Str::limit($reason, 30) }}</td>
-                                            <td class="px-4 py-2 text-sm text-gray-700">{{ $data['total_users'] }}</td>
-                                            <td class="px-4 py-2 text-sm text-gray-700">{{ number_format($data['demographics']['pwd_percentage'] ?? 0, 1) }}%</td>
-                                            <td class="px-4 py-2 text-sm text-gray-700">
-                                                @if(isset($data['demographics']['gender_split']))
-                                                    @foreach($data['demographics']['gender_split'] as $g => $c)
-                                                        <span class="inline-block mr-2">{{ $g }}: {{ $c }}</span>
-                                                    @endforeach
-                                                @endif
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Emerging Needs Table -->
-                    <div class="bg-white rounded-lg border border-gray-200">
-                        <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
-                            <h4 class="text-sm font-semibold text-gray-800">Emerging Other Reasons</h4>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">#</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Reason</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Count</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    @if(isset($reasonsData['emerging_needs']) && count($reasonsData['emerging_needs']) > 0)
-                                        @foreach($reasonsData['emerging_needs'] as $other => $count)
-                                            <tr class="hover:bg-gray-50 transition">
-                                                <td class="px-4 py-2 text-sm text-gray-700">{{ $loop->iteration }}</td>
-                                                <td class="px-4 py-2 text-sm text-gray-700">{{ Str::limit($other, 40) }}</td>
-                                                <td class="px-4 py-2 text-sm text-gray-700">{{ $count }}</td>
-                                            </tr>
-                                        @endforeach
-                                    @else
-                                        <tr>
-                                            <td colspan="3" class="px-4 py-4 text-center text-sm text-gray-500">
-                                                No emerging other reasons found.
-                                            </td>
-                                        </tr>
-                                    @endif
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            @else
-                <div class="text-center py-12">
-                    <i class="fas fa-question-circle text-gray-400 text-4xl mb-4"></i>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Reasons Data Available</h3>
-                    <p class="text-gray-500">There are no reservation reasons recorded for the selected period.</p>
-                </div>
-            @endif
-        </div>
-    </div>
-
     <!-- Peak Usage Report Table -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 {{ (!isset($reportType) || $reportType == 'all' || $reportType == 'peak') ? '' : 'hidden' }}" id="peak-report">
         <div class="px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-semibold text-gray-800">Peak Usage Analysis</h3>
             <p class="text-sm text-gray-500 mt-1">
                 @if($calculatedStartDate && $calculatedEndDate)
-                    Period: {{ $calculatedStartDate->format('M d, Y') }} - {{ $calculatedEndDate->format('M d, Y') }}
+                    Period: {{ $calculatedStartDate->format('M d, Y') }} to {{ $calculatedEndDate->format('M d, Y') }}
                 @else
                     Period: All Time
                 @endif
@@ -436,8 +304,9 @@
                     if ($hourly) {
                         $hourCol = is_object($hourly) ? $hourly : collect($hourly);
                         $sorted = $hourCol->sortByDesc(function($v) { return $v['total_reservations'] ?? 0; });
-                        $topHour = $sorted->keys()->first();
-                        $topHourCount = optional($sorted->first())['total_reservations'] ?? 0;
+                        $topHourData = $sorted->first();
+                        $topHour = $topHourData['hour'] ?? null;
+                        $topHourCount = $topHourData['total_reservations'] ?? 0;
                         $totalPeakReservations = $hourCol->reduce(function($carry, $v) { return $carry + ($v['total_reservations'] ?? 0); }, 0);
                     }
                     $topDay = null;
@@ -447,13 +316,24 @@
                     }
                 }
             @endphp
-            <div class="px-6 pb-4">
-                <div class="text-sm text-gray-700">
-                    <p>
-                        Summary: Top Hour: <strong>{{ $topHour ?? '—' }}</strong> 
-                        ({{ $topHourCount ?? 0 }} reservations) — Top Day: <strong>{{ $topDay ?? '—' }}</strong> 
-                        — Total Reservations (hourly aggregation): <strong>{{ $totalPeakReservations ?? 0 }}</strong>
-                    </p>
+            <div class="px-6 py-3 bg-gray-50 border-t border-gray-200">
+                <div class="grid grid-cols-4 gap-4">
+                    <div>
+                        <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Top Hour</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ $topHour ?? '—' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Peak Reservations</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ $topHourCount ?? 0 }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Top Day</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ $topDay ?? '—' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Total Reservations</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ $totalPeakReservations ?? 0 }}</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -476,10 +356,10 @@
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @if(isset($peakData['hourly_usage']) && $peakData['hourly_usage']->count() > 0)
-                                    @foreach($peakData['hourly_usage']->sortByDesc(function($v) { return $v['total_reservations']; })->take(10) as $hour => $info)
+                                    @foreach($peakData['hourly_usage']->sortByDesc(function($v) { return $v['total_reservations']; })->take(10) as $info)
                                         <tr class="hover:bg-gray-50 transition">
                                             <td class="px-4 py-2 text-sm text-gray-700">{{ $loop->iteration }}</td>
-                                            <td class="px-4 py-2 text-sm text-gray-700">{{ $hour }}</td>
+                                            <td class="px-4 py-2 text-sm text-gray-700 font-medium">{{ $info['hour'] }}</td>
                                             <td class="px-4 py-2 text-sm text-gray-700">{{ $info['total_reservations'] }}</td>
                                             <td class="px-4 py-2 text-sm text-gray-700">{{ number_format($info['utilization_rate'], 1) }}%</td>
                                         </tr>
@@ -584,8 +464,11 @@
                                         <tr class="hover:bg-gray-50 transition">
                                             <td class="px-4 py-2 text-sm font-medium text-gray-900">{{ $service }}</td>
                                             <td class="px-4 py-2 text-sm text-gray-700">
-                                                @foreach($info['peak_hours'] as $h => $c)
-                                                    <span class="inline-block mr-2">{{ $h }} ({{ $c }})</span>
+                                                @foreach($info['peak_hours'] as $peakHour)
+                                                    <span class="inline-block mr-3 mb-1">
+                                                        <span class="font-medium">{{ $peakHour['hour'] }}</span>
+                                                        <span class="text-gray-500">({{ $peakHour['count'] }} reservations)</span>
+                                                    </span>
                                                 @endforeach
                                             </td>
                                             <td class="px-4 py-2 text-sm text-gray-700">{{ round($info['average_duration'],1) }} minutes</td>
@@ -618,11 +501,47 @@
             <h3 class="text-lg font-semibold text-gray-800">User Engagement</h3>
             <p class="text-sm text-gray-500 mt-1">
                 @if($calculatedStartDate && $calculatedEndDate)
-                    Period: {{ $calculatedStartDate->format('M d, Y') }} - {{ $calculatedEndDate->format('M d, Y') }}
+                    Period: {{ $calculatedStartDate->format('M d, Y') }} to {{ $calculatedEndDate->format('M d, Y') }}
                 @else
                     Period: All Time
                 @endif
             </p>
+            
+            @if(isset($engagementData))
+                @php
+                    $overview = $engagementData['engagement_overview'] ?? [];
+                    $totalUsers = $overview['total_users'] ?? 0;
+                    $activeUsers = $overview['active_users'] ?? 0;
+                    $engagementRate = round($overview['engagement_rate'] ?? 0, 2);
+                    $totalReservations = $overview['total_reservations'] ?? 0;
+                    $avgReservations = round($overview['avg_reservations_per_user'] ?? 0, 2);
+                @endphp
+
+                <div class="px-6 py-3 bg-gray-50 border-t border-gray-200 mt-3">
+                    <div class="grid grid-cols-5 gap-4">
+                        <div>
+                            <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Total Users</p>
+                            <p class="text-2xl font-bold text-gray-900 mt-1">{{ number_format($totalUsers) }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Active Users</p>
+                            <p class="text-2xl font-bold text-gray-900 mt-1">{{ number_format($activeUsers) }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Engagement Rate</p>
+                            <p class="text-2xl font-bold text-gray-900 mt-1">{{ $engagementRate }}%</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Total Reservations</p>
+                            <p class="text-2xl font-bold text-gray-900 mt-1">{{ number_format($totalReservations) }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Avg/User</p>
+                            <p class="text-2xl font-bold text-gray-900 mt-1">{{ $avgReservations }}</p>
+                        </div>
+                    </div>
+                </div>
+            @endif
         </div>
 
         <div class="px-6 py-4">
@@ -634,22 +553,46 @@
                     $topUsers = $engagementData['service_preferences'] ?? collect();
                 @endphp
 
-                <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-white rounded-lg border border-gray-200 p-4">
-                        <div class="text-sm text-gray-600">Total Approved Users</div>
-                        <div class="text-2xl font-semibold text-gray-900">{{ number_format($overview['total_users'] ?? 0) }}</div>
+                <!-- Engagement Overview Table -->
+                <div class="mb-6 bg-white rounded-lg border border-gray-200">
+                    <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                        <h4 class="text-sm font-semibold text-gray-800">Engagement Overview</h4>
                     </div>
-                    <div class="bg-white rounded-lg border border-gray-200 p-4">
-                        <div class="text-sm text-gray-600">Active Users</div>
-                        <div class="text-2xl font-semibold text-gray-900">{{ number_format($overview['active_users'] ?? 0) }}</div>
-                    </div>
-                    <div class="bg-white rounded-lg border border-gray-200 p-4">
-                        <div class="text-sm text-gray-600">Engagement Rate</div>
-                        <div class="text-2xl font-semibold text-gray-900">{{ round($overview['engagement_rate'] ?? 0, 2) }}%</div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Metric</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Value</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td class="px-4 py-2 text-sm text-gray-700">Total Approved Users</td>
+                                    <td class="px-4 py-2 text-sm text-gray-700">{{ number_format($overview['total_users'] ?? 0) }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-2 text-sm text-gray-700">Active Users</td>
+                                    <td class="px-4 py-2 text-sm text-gray-700">{{ number_format($overview['active_users'] ?? 0) }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-2 text-sm text-gray-700">Engagement Rate</td>
+                                    <td class="px-4 py-2 text-sm text-gray-700">{{ round($overview['engagement_rate'] ?? 0, 2) }}%</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-2 text-sm text-gray-700">Total Reservations</td>
+                                    <td class="px-4 py-2 text-sm text-gray-700">{{ number_format($overview['total_reservations'] ?? 0) }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-2 text-sm text-gray-700">Avg Reservations per User</td>
+                                    <td class="px-4 py-2 text-sm text-gray-700">{{ number_format($overview['avg_reservations_per_user'] ?? 0, 2) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <!-- Segments -->
+                <!-- User Segments Table -->
                 <div class="mb-6 bg-white rounded-lg border border-gray-200">
                     <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
                         <h4 class="text-sm font-semibold text-gray-800">User Segments</h4>
@@ -684,36 +627,46 @@
                     </div>
                 </div>
 
-                <!-- Demographics Summary -->
-                <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bg-white rounded-lg border border-gray-200 p-4">
-                        <h4 class="text-sm font-semibold text-gray-800 mb-2">Engagement by Age</h4>
-                        @if(isset($demographics['by_age']))
-                            @foreach($demographics['by_age'] as $ageLabel => $data)
-                                <div class="text-sm text-gray-700">{{ $ageLabel }} — Active: {{ $data['active_users'] ?? 0 }} / Total: {{ $data['total_users'] ?? 0 }} ({{ round($data['engagement_rate'] ?? 0,1) }}%)</div>
-                            @endforeach
-                        @else
-                            <div class="text-sm text-gray-500">No age data available.</div>
-                        @endif
+                <!-- PWD Engagement Table -->
+                <div class="mb-6 bg-white rounded-lg border border-gray-200">
+                    <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                        <h4 class="text-sm font-semibold text-gray-800">PWD Engagement</h4>
                     </div>
-
-                    <div class="bg-white rounded-lg border border-gray-200 p-4">
-                        <h4 class="text-sm font-semibold text-gray-800 mb-2">Engagement by Gender / PWD</h4>
-                        @if(isset($demographics['by_gender']))
-                            @foreach($demographics['by_gender'] as $gender => $data)
-                                <div class="text-sm text-gray-700">{{ $gender }} — Active: {{ $data['active_users'] ?? 0 }} / Total: {{ $data['total_users'] ?? 0 }} ({{ round($data['engagement_rate'] ?? 0,1) }}%)</div>
-                            @endforeach
-                        @else
-                            <div class="text-sm text-gray-500">No gender data available.</div>
-                        @endif
-                        <div class="mt-3 text-sm text-gray-700">
-                            <strong>PWD:</strong> {{ isset($demographics['by_pwd_status']) ? ($demographics['by_pwd_status']['pwd']['active_users'] ?? 0) . '/' . ($demographics['by_pwd_status']['pwd']['total_users'] ?? 0) : 'N/A' }}
-                        </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Category</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Active Users</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Total Users</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Engagement Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @php
+                                    $pwdData = $demographics['by_pwd_status'] ?? [];
+                                    $pwdInfo = $pwdData['pwd'] ?? [];
+                                    $nonPwdInfo = $pwdData['non_pwd'] ?? [];
+                                @endphp
+                                <tr>
+                                    <td class="px-4 py-2 text-sm text-gray-700">PWD</td>
+                                    <td class="px-4 py-2 text-sm text-gray-700">{{ $pwdInfo['active_users'] ?? 0 }}</td>
+                                    <td class="px-4 py-2 text-sm text-gray-700">{{ $pwdInfo['total_users'] ?? 0 }}</td>
+                                    <td class="px-4 py-2 text-sm text-gray-700">{{ round($pwdInfo['engagement_rate'] ?? 0, 1) }}%</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-2 text-sm text-gray-700">Non-PWD</td>
+                                    <td class="px-4 py-2 text-sm text-gray-700">{{ $nonPwdInfo['active_users'] ?? 0 }}</td>
+                                    <td class="px-4 py-2 text-sm text-gray-700">{{ $nonPwdInfo['total_users'] ?? 0 }}</td>
+                                    <td class="px-4 py-2 text-sm text-gray-700">{{ round($nonPwdInfo['engagement_rate'] ?? 0, 1) }}%</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <!-- Top Engaged Users -->
-                <div class="bg-white rounded-lg border border-gray-200">
+                <!-- Top Engaged Users Table -->
+                <div class="mb-6 bg-white rounded-lg border border-gray-200">
                     <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
                         <h4 class="text-sm font-semibold text-gray-800">Top Engaged Users</h4>
                     </div>

@@ -25,6 +25,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register.form');
     Route::post('/register', [AuthController::class, 'register'])->name('register');
     Route::post('/check-email', [AuthController::class, 'checkEmailExists'])->name('check.email');
+    Route::get('/register/reset', [AuthController::class, 'resetRegistration'])->name('register.reset');
 
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login.form');
     Route::post('/login', [AuthController::class, 'login'])->name('login');
@@ -66,8 +67,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/closure-periods', [ClosurePeriodController::class, 'store'])->name('admin.closure_periods.store');
             Route::put('/closure-periods/{closurePeriod}', [ClosurePeriodController::class, 'update'])->name('admin.closure_periods.update');
             Route::delete('/closure-periods/{closurePeriod}', [ClosurePeriodController::class, 'destroy'])->name('admin.closure_periods.destroy');
-        Route::get('/closure-periods/archives', [ClosurePeriodController::class, 'archives'])->name('admin.closure_periods.archives');
-        Route::post('/closure-periods/{id}/restore', [ClosurePeriodController::class, 'restore'])->name('admin.closure_periods.restore');
+            Route::post('/closure-periods/{id}/restore', [ClosurePeriodController::class, 'restore'])->name('admin.closure_periods.restore');
 
         // Services CRUD
         Route::get('/services', [ServiceController::class, 'index'])->name('admin.services.index');

@@ -97,6 +97,16 @@ class ClosurePeriodController extends Controller
         $oldStatus = $closurePeriod->status;
         $newStatus = $validated['status'] ?? $closurePeriod->status;
 
+        // Check if trying to activate a closure period with past dates
+        if ($oldStatus !== 'active' && $newStatus === 'active') {
+            $startDateObj = $validated['start_date'] ? \Carbon\Carbon::parse($validated['start_date']) : $closurePeriod->start_date;
+            $endDateObj = $validated['end_date'] ? \Carbon\Carbon::parse($validated['end_date']) : $closurePeriod->end_date;
+            
+            if ($endDateObj->isPast()) {
+                return back()->withErrors(['status' => 'Cannot activate a closure period that has already ended. Please update the dates to future dates.']);
+            }
+        }
+
         $closurePeriod->update([
             'start_date' => $validated['start_date'] ?? $closurePeriod->start_date->toDateString(),
             'end_date' => $validated['end_date'] ?? $closurePeriod->end_date->toDateString(),
@@ -122,27 +132,11 @@ class ClosurePeriodController extends Controller
         return redirect()->route('admin.closure_periods.index')->with('status', 'Closure period archived.');
     }
 
-    public function archives(Request $request)
-    {
-        $items = ClosurePeriod::onlyTrashed()
-            ->when($request->filled('q'), function($q) use ($request) {
-                $term = $request->get('q');
-                $q->where('reason', 'like', "%$term%")
-                  ->orWhere('status', 'like', "%$term%")
-                  ->orWhereDate('start_date', $term)
-                  ->orWhereDate('end_date', $term);
-            })
-            ->orderByDesc('deleted_at')
-            ->paginate(6)
-            ->withQueryString();
-        return view('admin.closure_periods_archives', compact('items'));
-    }
-
     public function restore($id)
     {
         $item = ClosurePeriod::onlyTrashed()->findOrFail($id);
         $item->restore();
-        return redirect()->route('admin.closure_periods.archives')->with('status', 'Closure period unarchived.');
+        return redirect()->route('admin.archives', ['tab' => 'closures'])->with('status', 'Closure period unarchived.');
     }
 
     public function closedDatesApi(Request $request)

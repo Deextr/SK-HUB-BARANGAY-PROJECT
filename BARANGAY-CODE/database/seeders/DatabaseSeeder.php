@@ -16,6 +16,9 @@ class DatabaseSeeder extends Seeder
         // Seed admin account
         $this->call(AdminSeeder::class);
 
+        // Seed resident accounts
+        $this->call(ResidentSeeder::class);
+
         // Uncomment to create test users
         // User::factory(10)->create();
     }

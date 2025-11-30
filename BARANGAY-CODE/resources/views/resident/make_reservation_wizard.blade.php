@@ -201,7 +201,13 @@
             <!-- Preferences Section -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Preferences (optional)</label>
-                <textarea id="preferences" name="preferences" rows="3" placeholder="Special assistance if PWD, special requests, etc." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent">{{ old('preferences') ?? '' }}</textarea>
+                <div class="relative">
+                    <textarea id="preferences" name="preferences" rows="3" placeholder="Special assistance if PWD, special requests, etc." maxlength="50" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent">{{ old('preferences') ?? '' }}</textarea>
+                    <div class="absolute right-2 bottom-2 text-xs text-gray-500">
+                        <span id="pref_char_count">0</span>/50
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-1 pl-1">Maximum 50 characters</p>
             </div>
             <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200 text-sm">
                 <p class="mb-1"><span class="font-semibold">Note:</span> You can cancel your reservation within 10 minutes after submission.</p>
@@ -923,6 +929,29 @@ document.addEventListener('DOMContentLoaded', function() {
             charCount.classList.remove('text-amber-600', 'text-red-600', 'font-medium');
         }
     });
+
+    // Character counter for preferences field
+    const preferencesInput = document.getElementById('preferences');
+    const prefCharCount = document.getElementById('pref_char_count');
+    
+    preferencesInput.addEventListener('input', function() {
+        const currentLength = this.value.length;
+        prefCharCount.textContent = currentLength;
+        
+        // Visual feedback as user approaches the limit
+        if (currentLength >= 38) {
+            prefCharCount.classList.add('text-amber-600', 'font-medium');
+            if (currentLength >= 50) {
+                prefCharCount.classList.remove('text-amber-600');
+                prefCharCount.classList.add('text-red-600');
+            }
+        } else {
+            prefCharCount.classList.remove('text-amber-600', 'text-red-600', 'font-medium');
+        }
+    });
+    
+    // Initialize preferences counter on page load
+    preferencesInput.dispatchEvent(new Event('input'));
 
     // Init
     loadUnavailableDates();

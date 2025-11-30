@@ -51,7 +51,7 @@
             </h2>
             <p class="text-sm text-gray-600 mb-6">Update your password to keep your account secure.</p>
 
-            <form action="{{ route('resident.settings.update-password') }}" method="POST" class="space-y-4">
+            <form id="passwordForm" action="{{ route('resident.settings.update-password') }}" method="POST" class="space-y-4">
                 @csrf
 
                 <!-- Current Password -->
@@ -103,7 +103,8 @@
                 </div>
 
                 <!-- Submit Button -->
-                <button type="submit" 
+                <button type="button" 
+                        onclick="openPasswordConfirmModal()"
                         class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 mt-6">
                     <i class="fas fa-save"></i>
                     Update Password
@@ -162,6 +163,47 @@
                         <i class="fas fa-times text-2xl"></i>
                     </button>
                     <img id="modalImage" src="" alt="Profile Picture" class="max-w-full max-h-[85vh] mx-auto rounded-lg shadow-2xl">
+                </div>
+            </div>
+
+            <!-- Password Change Confirmation Modal -->
+            <div id="passwordConfirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div class="bg-gray-50 rounded-lg shadow-xl max-w-md w-full p-6 animate-in">
+                    <!-- Modal Header -->
+                    <div class="flex items-center mb-4">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-circle text-yellow-500 text-2xl"></i>
+                        </div>
+                        <h3 class="ml-3 text-lg font-semibold text-gray-800">Confirm Password Change</h3>
+                    </div>
+
+                    <!-- Modal Body -->
+                    <div class="mb-6">
+                        <p class="text-gray-700 text-sm mb-3">
+                            Are you sure you want to change your password? This action cannot be undone.
+                        </p>
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <p class="text-xs text-yellow-800">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                You will need to log in again with your new password after this change.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="flex gap-3">
+                        <button type="button" 
+                                onclick="closePasswordConfirmModal()"
+                                class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-200">
+                            Cancel
+                        </button>
+                        <button type="button" 
+                                onclick="submitPasswordForm()"
+                                class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2">
+                            <i class="fas fa-check"></i>
+                            Confirm
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -288,6 +330,67 @@
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
             closeImageModal();
+        }
+    });
+
+    // Password confirmation modal functions
+    function openPasswordConfirmModal() {
+        // Validate form before opening modal
+        const form = document.getElementById('passwordForm');
+        const currentPassword = document.getElementById('current_password').value;
+        const password = document.getElementById('password').value;
+        const passwordConfirmation = document.getElementById('password_confirmation').value;
+
+        // Basic validation
+        if (!currentPassword) {
+            alert('Please enter your current password.');
+            return;
+        }
+
+        if (!password) {
+            alert('Please enter your new password.');
+            return;
+        }
+
+        if (!passwordConfirmation) {
+            alert('Please confirm your new password.');
+            return;
+        }
+
+        if (password !== passwordConfirmation) {
+            alert('Passwords do not match. Please try again.');
+            return;
+        }
+
+        // Show confirmation modal
+        document.getElementById('passwordConfirmModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closePasswordConfirmModal() {
+        document.getElementById('passwordConfirmModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    function submitPasswordForm() {
+        closePasswordConfirmModal();
+        document.getElementById('passwordForm').submit();
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('passwordConfirmModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closePasswordConfirmModal();
+        }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            const modal = document.getElementById('passwordConfirmModal');
+            if (!modal.classList.contains('hidden')) {
+                closePasswordConfirmModal();
+            }
         }
     });
 </script>

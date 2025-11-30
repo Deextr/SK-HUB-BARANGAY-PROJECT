@@ -37,6 +37,17 @@
             margin-bottom: 12px;
             page-break-inside: avoid;
         }
+        .section-report {
+            page-break-before: always;
+            margin-bottom: 12px;
+            margin-top: 0;
+            padding-top: 0;
+            page-break-after: avoid;
+        }
+        .executive-summary {
+            margin-bottom: 12px;
+            padding-bottom: 0;
+        }
         .section-title {
             font-size: 13px;
             font-weight: bold;
@@ -89,172 +100,168 @@
         <p>Generated on: {{ now()->format('F d, Y \a\t g:i A') }}</p>
     </div>
 
-    @if($reportType === 'reasons' || $reportType === 'all')
-    <div class="section">
-        <div class="section-title">RESERVATION REASONS ANALYSIS</div>
+    <!-- Executive Summary Section -->
+    <div class="section executive-summary">
+        <div class="section-title">EXECUTIVE SUMMARY</div>
+        
+        @if($reportType === 'all' || $reportType === 'reservations')
+        @php
+            $reservationsCol = collect($reservationsData ?? []);
+            $totalReservations = $reservationsCol->count();
+            $pending = $reservationsCol->where('status', 'pending')->count();
+            $completed = $reservationsCol->where('status', 'completed')->count();
+            $cancelled = $reservationsCol->where('status', 'cancelled')->count();
+        @endphp
+        <table>
+            <tr>
+                <td style="font-weight:bold; width:50%;">Reservations Summary</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Total Reservations</td>
+                <td>{{ $totalReservations }}</td>
+            </tr>
+            <tr>
+                <td>Pending</td>
+                <td>{{ $pending }}</td>
+            </tr>
+            <tr>
+                <td>Completed</td>
+                <td>{{ $completed }}</td>
+            </tr>
+            <tr>
+                <td>Cancelled</td>
+                <td>{{ $cancelled }}</td>
+            </tr>
+        </table>
+        @endif
 
-        @if(isset($reasonsData) && count($reasonsData['service_reason_mapping']) > 0)
-            <table>
-                <thead>
-                    <tr>
-                        <th>Service</th>
-                        <th>Total Usage</th>
-                        <th>Top Reasons</th>
-                        <th>Other Reasons (samples)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($reasonsData['service_reason_mapping'] as $serviceName => $info)
-                        <tr>
-                            <td>{{ $serviceName }}</td>
-                            <td>{{ $info['total_usage'] }}</td>
-                            <td>
-                                @foreach($info['reason_breakdown']->take(5) as $reason => $count)
-                                    <div>{{ $reason }}: {{ $count }}</div>
-                                @endforeach
-                            </td>
-                            <td>
-                                @foreach($info['other_reasons']->take(3) as $o)
-                                    <div>{{ $o }}</div>
-                                @endforeach
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
+        @if($reportType === 'all' || $reportType === 'services')
+        @php
+            $servicesCount = count($servicesData ?? []);
+            $totalUsage = 0;
+            $totalUniqueUsers = 0;
+            $topServiceName = null;
+            $topServiceCount = 0;
+            
+            foreach ($servicesData ?? [] as $s) {
+                $count = $s['usage_count'] ?? 0;
+                $totalUsage += $count;
+                $totalUniqueUsers += ($s['unique_users'] ?? 0);
+                
+                if ($count > $topServiceCount) {
+                    $topServiceCount = $count;
+                    $topServiceName = $s['service']->name ?? null;
+                }
+            }
+            
+            $avgUsage = $servicesCount > 0 ? round($totalUsage / $servicesCount, 1) : 0;
+        @endphp
+        <table style="margin-top:8px;">
+            <tr>
+                <td style="font-weight:bold; width:50%;">Services Summary</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Total Services</td>
+                <td>{{ $servicesCount }}</td>
+            </tr>
+            <tr>
+                <td>Total Usage</td>
+                <td>{{ $totalUsage }}</td>
+            </tr>
+            <tr>
+                <td>Unique Users</td>
+                <td>{{ $totalUniqueUsers }}</td>
+            </tr>
+            <tr>
+                <td>Top Service</td>
+                <td>{{ $topServiceName }} ({{ $topServiceCount }} uses)</td>
+            </tr>
+            <tr>
+                <td>Average Usage per Service</td>
+                <td>{{ $avgUsage }}</td>
+            </tr>
+        </table>
+        @endif
 
-            <div style="margin-top:8px;">
-                <div style="font-weight:bold; margin-bottom:4px;">Emerging Other Reasons</div>
-                @if(isset($reasonsData['emerging_needs']) && count($reasonsData['emerging_needs']) > 0)
-                    <ol style="font-size:11px; margin-left:18px;">
-                        @foreach($reasonsData['emerging_needs'] as $other => $count)
-                            <li>{{ $other }} — {{ $count }}</li>
-                        @endforeach
-                    </ol>
-                @else
-                    <div class="no-data">No emerging other reasons found.</div>
-                @endif
-            </div>
-        @else
-            <div class="no-data">No reasons data available for the selected period.</div>
+        @if($reportType === 'all' || $reportType === 'peak')
+        @php
+            $hourly = $peakData['hourly_usage'] ?? null;
+            $daily = $peakData['daily_patterns'] ?? null;
+            $topHour = null;
+            $topHourCount = 0;
+            $totalPeakReservations = 0;
+            
+            if ($hourly) {
+                $hourCol = is_object($hourly) ? $hourly : collect($hourly);
+                $sorted = $hourCol->sortByDesc(function($v) { return $v['total_reservations'] ?? 0; });
+                $topHour = $sorted->keys()->first();
+                $topHourCount = optional($sorted->first())['total_reservations'] ?? 0;
+                $totalPeakReservations = $hourCol->reduce(function($carry, $v) { return $carry + ($v['total_reservations'] ?? 0); }, 0);
+            }
+            
+            $topDay = null;
+            if ($daily) {
+                $dailyCol = is_object($daily) ? $daily : collect($daily);
+                $topDay = $dailyCol->sortByDesc(function($v) { return $v; })->keys()->first();
+            }
+        @endphp
+        <table style="margin-top:8px;">
+            <tr>
+                <td style="font-weight:bold; width:50%;">Peak Usage Summary</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Top Hour</td>
+                <td>{{ $topHour }} ({{ $topHourCount }} reservations)</td>
+            </tr>
+            <tr>
+                <td>Top Day</td>
+                <td>{{ $topDay ?? 'N/A' }}</td>
+            </tr>
+            <tr>
+                <td>Total Reservations (Peak Analysis)</td>
+                <td>{{ $totalPeakReservations }}</td>
+            </tr>
+        </table>
+        @endif
+
+        @if($reportType === 'all' || $reportType === 'engagement')
+        @php
+            $engagementOverview = $engagementData['engagement_overview'] ?? [];
+        @endphp
+        <table style="margin-top:8px;">
+            <tr>
+                <td style="font-weight:bold; width:50%;">User Engagement Summary</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Total Users</td>
+                <td>{{ $engagementOverview['total_users'] ?? 0 }}</td>
+            </tr>
+            <tr>
+                <td>Active Users</td>
+                <td>{{ $engagementOverview['active_users'] ?? 0 }}</td>
+            </tr>
+            <tr>
+                <td>Engagement Rate</td>
+                <td>{{ number_format($engagementOverview['engagement_rate'] ?? 0, 1) }}%</td>
+            </tr>
+            <tr>
+                <td>Total Reservations</td>
+                <td>{{ $engagementOverview['total_reservations'] ?? 0 }}</td>
+            </tr>
+            <tr>
+                <td>Avg Reservations per User</td>
+                <td>{{ number_format($engagementOverview['avg_reservations_per_user'] ?? 0, 1) }}</td>
+            </tr>
+        </table>
         @endif
     </div>
 
-    @endif
-
-    @if($reportType === 'engagement' || $reportType === 'all')
-    <div class="section">
-        <div class="section-title">USER ENGAGEMENT</div>
-
-        @if(isset($engagementData) && is_array($engagementData) || (isset($engagementData) && $engagementData instanceof \Illuminate\Support\Collection))
-            <!-- Engagement Overview -->
-            <div style="margin-bottom:8px;">
-                <div style="font-weight:bold; margin-bottom:4px;">Engagement Overview</div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Metric</th>
-                            <th>Value</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @php $ov = $engagementData['engagement_overview'] ?? []; @endphp
-                        <tr><td>Total Approved Users</td><td>{{ $ov['total_users'] ?? 0 }}</td></tr>
-                        <tr><td>Active Users</td><td>{{ $ov['active_users'] ?? 0 }}</td></tr>
-                        <tr><td>Engagement Rate</td><td>{{ isset($ov['engagement_rate']) ? round($ov['engagement_rate'],2) . '%' : '0%' }}</td></tr>
-                        <tr><td>Total Reservations</td><td>{{ $ov['total_reservations'] ?? 0 }}</td></tr>
-                        <tr><td>Avg Reservations / User</td><td>{{ isset($ov['avg_reservations_per_user']) ? round($ov['avg_reservations_per_user'],2) : 0 }}</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- User Segments -->
-            <div style="margin-bottom:8px;">
-                <div style="font-weight:bold; margin-bottom:4px;">User Segments</div>
-                @php
-                    $seg = $engagementData['user_segments'] ?? [];
-                    $super = isset($seg['super_users']) ? (is_countable($seg['super_users']) ? count($seg['super_users']) : $seg['super_users']->count()) : 0;
-                    $regular = isset($seg['regular_users']) ? (is_countable($seg['regular_users']) ? count($seg['regular_users']) : $seg['regular_users']->count()) : 0;
-                    $occasional = isset($seg['occasional_users']) ? (is_countable($seg['occasional_users']) ? count($seg['occasional_users']) : $seg['occasional_users']->count()) : 0;
-                    $inactive = isset($seg['inactive_users']) ? (is_countable($seg['inactive_users']) ? count($seg['inactive_users']) : $seg['inactive_users']->count()) : 0;
-                    $totalSeg = $super + $regular + $occasional + $inactive ?: 1;
-                @endphp
-                <table>
-                    <thead>
-                        <tr><th>Segment</th><th>Count</th><th>Percent</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr><td>Super Users (5+)</td><td>{{ $super }}</td><td>{{ round(($super/$totalSeg)*100,2) }}%</td></tr>
-                        <tr><td>Regular Users (2-4)</td><td>{{ $regular }}</td><td>{{ round(($regular/$totalSeg)*100,2) }}%</td></tr>
-                        <tr><td>Occasional (1)</td><td>{{ $occasional }}</td><td>{{ round(($occasional/$totalSeg)*100,2) }}%</td></tr>
-                        <tr><td>Inactive</td><td>{{ $inactive }}</td><td>{{ round(($inactive/$totalSeg)*100,2) }}%</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Demographic Engagement -->
-            <div style="margin-bottom:8px;">
-                <div style="font-weight:bold; margin-bottom:4px;">Demographic Engagement (By Age)</div>
-                <table>
-                    <thead><tr><th>Age Group</th><th>Total Users</th><th>Active Users</th><th>Engagement Rate</th><th>Avg Reservations</th></tr></thead>
-                    <tbody>
-                        @foreach(($engagementData['demographic_engagement']['by_age'] ?? []) as $ageLabel => $d)
-                            <tr>
-                                <td>{{ $ageLabel }}</td>
-                                <td>{{ $d['total_users'] ?? 0 }}</td>
-                                <td>{{ $d['active_users'] ?? 0 }}</td>
-                                <td>{{ isset($d['engagement_rate']) ? round($d['engagement_rate'],2) . '%' : '0%' }}</td>
-                                <td>{{ isset($d['avg_reservations']) ? round($d['avg_reservations'],2) : 0 }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-            <div style="margin-bottom:8px;">
-                <div style="font-weight:bold; margin-bottom:4px;">Demographic Engagement (By Gender)</div>
-                <table>
-                    <thead><tr><th>Gender</th><th>Total Users</th><th>Active Users</th><th>Engagement Rate</th></tr></thead>
-                    <tbody>
-                        @foreach(($engagementData['demographic_engagement']['by_gender'] ?? []) as $gender => $d)
-                            <tr>
-                                <td>{{ $gender }}</td>
-                                <td>{{ $d['total_users'] ?? 0 }}</td>
-                                <td>{{ $d['active_users'] ?? 0 }}</td>
-                                <td>{{ isset($d['engagement_rate']) ? round($d['engagement_rate'],2) . '%' : '0%' }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Top Engaged Users -->
-            <div style="margin-bottom:8px;">
-                <div style="font-weight:bold; margin-bottom:4px;">Top Engaged Users</div>
-                <table>
-                    <thead><tr><th>#</th><th>User</th><th>Total Reservations</th><th>Preferred Services</th><th>Last Activity</th></tr></thead>
-                    <tbody>
-                        @php $rank = 1; @endphp
-                        @foreach(($engagementData['service_preferences'] ?? collect())->take(20) as $user)
-                            <tr>
-                                <td>{{ $rank++ }}</td>
-                                <td>{{ $user['user_name'] ?? 'Unknown' }}</td>
-                                <td>{{ $user['total_reservations'] ?? 0 }}</td>
-                                <td>{{ is_array($user['preferred_services'] ?? null) ? implode(' | ', array_keys($user['preferred_services'])) : (isset($user['preferred_services']) && $user['preferred_services'] instanceof \Illuminate\Support\Collection ? $user['preferred_services']->keys()->join(' | ') : '') }}</td>
-                                <td>{{ $user['last_activity'] ?? 'N/A' }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-        @else
-            <div class="no-data">No engagement data available for the selected period.</div>
-        @endif
-    </div>
-    @endif
     @if($reportType === 'reservations' || $reportType === 'all')
-    <div class="section">
+    <div class="section-report">
         <div class="section-title">RESERVATIONS REPORT</div>
         
         @if(isset($reservationsData) && $reservationsData->count() > 0)
@@ -289,7 +296,7 @@
     @endif
 
     @if($reportType === 'services' || $reportType === 'all')
-    <div class="section">
+    <div class="section-report">
         <div class="section-title">SERVICES REPORT</div>
         
         @if(isset($servicesData) && count($servicesData) > 0)
@@ -324,7 +331,7 @@
     @endif
 
     @if($reportType === 'peak' || $reportType === 'all')
-    <div class="section">
+    <div class="section-report">
         <div class="section-title">PEAK USAGE ANALYSIS</div>
 
         @if(isset($peakData) && count((array)($peakData ?? [])) > 0)
@@ -427,6 +434,127 @@
             </div>
         @else
             <div class="no-data">No peak usage data available for the selected period.</div>
+        @endif
+    </div>
+    @endif
+
+    @if($reportType === 'engagement' || $reportType === 'all')
+    <div class="section-report">
+        <div class="section-title">USER ENGAGEMENT</div>
+
+        @if(isset($engagementData) && is_array($engagementData) || (isset($engagementData) && $engagementData instanceof \Illuminate\Support\Collection))
+            @php
+                $ov = $engagementData['engagement_overview'] ?? [];
+                $totalUsers = $ov['total_users'] ?? 0;
+                $activeUsers = $ov['active_users'] ?? 0;
+                $engagementRate = round($ov['engagement_rate'] ?? 0, 2);
+                $totalReservations = $ov['total_reservations'] ?? 0;
+                $avgReservations = round($ov['avg_reservations_per_user'] ?? 0, 2);
+            @endphp
+            <div style="margin-bottom:8px; font-size:11px;">
+                <p>
+                    Summary: <strong>{{ $totalUsers }}</strong> total users —
+                    <strong>{{ $activeUsers }}</strong> active —
+                    Engagement Rate: <strong>{{ $engagementRate }}%</strong> —
+                    Total Reservations: <strong>{{ $totalReservations }}</strong> —
+                    Avg/User: <strong>{{ $avgReservations }}</strong>
+                </p>
+            </div>
+
+            <!-- Engagement Overview -->
+            <div style="margin-bottom:8px;">
+                <div style="font-weight:bold; margin-bottom:4px;">Engagement Overview</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php $ov = $engagementData['engagement_overview'] ?? []; @endphp
+                        <tr><td>Total Approved Users</td><td>{{ $ov['total_users'] ?? 0 }}</td></tr>
+                        <tr><td>Active Users</td><td>{{ $ov['active_users'] ?? 0 }}</td></tr>
+                        <tr><td>Engagement Rate</td><td>{{ isset($ov['engagement_rate']) ? round($ov['engagement_rate'],2) . '%' : '0%' }}</td></tr>
+                        <tr><td>Total Reservations</td><td>{{ $ov['total_reservations'] ?? 0 }}</td></tr>
+                        <tr><td>Avg Reservations / User</td><td>{{ isset($ov['avg_reservations_per_user']) ? round($ov['avg_reservations_per_user'],2) : 0 }}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- User Segments -->
+            <div style="margin-bottom:8px;">
+                <div style="font-weight:bold; margin-bottom:4px;">User Segments</div>
+                @php
+                    $seg = $engagementData['user_segments'] ?? [];
+                    $super = isset($seg['super_users']) ? (is_countable($seg['super_users']) ? count($seg['super_users']) : $seg['super_users']->count()) : 0;
+                    $regular = isset($seg['regular_users']) ? (is_countable($seg['regular_users']) ? count($seg['regular_users']) : $seg['regular_users']->count()) : 0;
+                    $occasional = isset($seg['occasional_users']) ? (is_countable($seg['occasional_users']) ? count($seg['occasional_users']) : $seg['occasional_users']->count()) : 0;
+                    $inactive = isset($seg['inactive_users']) ? (is_countable($seg['inactive_users']) ? count($seg['inactive_users']) : $seg['inactive_users']->count()) : 0;
+                    $totalSeg = $super + $regular + $occasional + $inactive ?: 1;
+                @endphp
+                <table>
+                    <thead>
+                        <tr><th>Segment</th><th>Count</th><th>Percent</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Super Users (5+)</td><td>{{ $super }}</td><td>{{ round(($super/$totalSeg)*100,2) }}%</td></tr>
+                        <tr><td>Regular Users (2-4)</td><td>{{ $regular }}</td><td>{{ round(($regular/$totalSeg)*100,2) }}%</td></tr>
+                        <tr><td>Occasional (1)</td><td>{{ $occasional }}</td><td>{{ round(($occasional/$totalSeg)*100,2) }}%</td></tr>
+                        <tr><td>Inactive</td><td>{{ $inactive }}</td><td>{{ round(($inactive/$totalSeg)*100,2) }}%</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PWD Engagement -->
+            <div style="margin-bottom:8px;">
+                <div style="font-weight:bold; margin-bottom:4px;">PWD Engagement</div>
+                @php
+                    $pwdData = $engagementData['demographic_engagement']['by_pwd_status'] ?? [];
+                    $pwdInfo = $pwdData['pwd'] ?? [];
+                    $nonPwdInfo = $pwdData['non_pwd'] ?? [];
+                @endphp
+                <table>
+                    <thead><tr><th>Category</th><th>Total Users</th><th>Active Users</th><th>Engagement Rate</th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td>PWD</td>
+                            <td>{{ $pwdInfo['total_users'] ?? 0 }}</td>
+                            <td>{{ $pwdInfo['active_users'] ?? 0 }}</td>
+                            <td>{{ isset($pwdInfo['engagement_rate']) ? round($pwdInfo['engagement_rate'],2) . '%' : '0%' }}</td>
+                        </tr>
+                        <tr>
+                            <td>Non-PWD</td>
+                            <td>{{ $nonPwdInfo['total_users'] ?? 0 }}</td>
+                            <td>{{ $nonPwdInfo['active_users'] ?? 0 }}</td>
+                            <td>{{ isset($nonPwdInfo['engagement_rate']) ? round($nonPwdInfo['engagement_rate'],2) . '%' : '0%' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Top Engaged Users -->
+            <div style="margin-bottom:8px;">
+                <div style="font-weight:bold; margin-bottom:4px;">Top Engaged Users</div>
+                <table>
+                    <thead><tr><th>#</th><th>User</th><th>Total Reservations</th><th>Preferred Services</th><th>Last Activity</th></tr></thead>
+                    <tbody>
+                        @php $rank = 1; @endphp
+                        @foreach(($engagementData['service_preferences'] ?? collect())->take(20) as $user)
+                            <tr>
+                                <td>{{ $rank++ }}</td>
+                                <td>{{ $user['user_name'] ?? 'Unknown' }}</td>
+                                <td>{{ $user['total_reservations'] ?? 0 }}</td>
+                                <td>{{ is_array($user['preferred_services'] ?? null) ? implode(' | ', array_keys($user['preferred_services'])) : (isset($user['preferred_services']) && $user['preferred_services'] instanceof \Illuminate\Support\Collection ? $user['preferred_services']->keys()->join(' | ') : '') }}</td>
+                                <td>{{ $user['last_activity'] ?? 'N/A' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+        @else
+            <div class="no-data">No engagement data available for the selected period.</div>
         @endif
     </div>
     @endif
