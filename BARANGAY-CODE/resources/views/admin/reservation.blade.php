@@ -23,6 +23,9 @@
             $currentDirection = $direction ?? request('direction');
         @endphp
         <form method="GET" class="space-y-4">
+            <!-- Hidden tab parameter to preserve current tab -->
+            <input type="hidden" name="tab" value="{{ $tab }}">
+            
             <!-- Row 1: Search and Date -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- Search Input -->
@@ -141,7 +144,7 @@
                     <td class="px-6 py-4 text-sm text-gray-900">
                         {{ $res->user?->full_name ?? '—' }}
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-900">{{ $res->service->name }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">{{ $res->service?->name ?? '—' }}</td>
                     <td class="px-6 py-4 text-sm text-gray-900">{{ $res->reservation_date->format('M j, Y') }}</td>
                     <td class="px-6 py-4 text-sm text-gray-900">
                         {{ \Carbon\Carbon::createFromFormat('H:i:s', $res->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::createFromFormat('H:i:s', $res->end_time)->format('g:i A') }}
@@ -169,7 +172,7 @@
                                 data-id="{{ $res->id }}" 
                                 data-ref="{{ $res->reference_no }}" 
                                 data-resident="{{ $res->user?->full_name ?? 'Unknown Resident' }}"
-                                data-service="{{ $res->service->name }}"
+                                data-service="{{ $res->service?->name ?? 'Service Archived' }}"
                                 data-date="{{ $res->reservation_date->format('Y-m-d') }}" 
                                 data-start="{{ substr($res->start_time,0,5) }}" 
                                 data-end="{{ substr($res->end_time,0,5) }}" 
@@ -812,14 +815,27 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target === cancelModal) hideCancelModal();
     });
     
-    // Form validation
+    // Form validation and submission
     cancelForm.addEventListener('submit', function(e) {
         const reason = document.getElementById('cancellation_reason').value.trim();
+        const applySuspension = document.getElementById('apply_suspension').checked;
+        
+        console.log('Cancel form submitted:', {
+            reason: reason,
+            applySuspension: applySuspension,
+            formAction: cancelForm.action
+        });
+        
         if (!reason) {
             e.preventDefault();
             alert('Please provide a reason for cancellation.');
             document.getElementById('cancellation_reason').focus();
+            return false;
         }
+        
+        // Log before submission
+        console.log('Form validation passed, allowing submission');
+        return true;
     });
     
     // ===== 5-MINUTE WARNING NOTIFICATION SYSTEM =====

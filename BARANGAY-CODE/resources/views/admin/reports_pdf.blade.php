@@ -37,6 +37,17 @@
             margin-bottom: 12px;
             page-break-inside: avoid;
         }
+        .section-report {
+            page-break-before: always;
+            margin-bottom: 12px;
+            margin-top: 0;
+            padding-top: 0;
+            page-break-after: avoid;
+        }
+        .executive-summary {
+            margin-bottom: 12px;
+            padding-bottom: 0;
+        }
         .section-title {
             font-size: 13px;
             font-weight: bold;
@@ -248,7 +259,7 @@
     </div>
     @endif
     @if($reportType === 'reservations' || $reportType === 'all')
-    <div class="section">
+    <div class="section-report">
         <div class="section-title">RESERVATIONS REPORT</div>
         
         @if(isset($reservationsData) && $reservationsData->count() > 0)
@@ -283,7 +294,7 @@
     @endif
 
     @if($reportType === 'services' || $reportType === 'all')
-    <div class="section">
+    <div class="section-report">
         <div class="section-title">SERVICES REPORT</div>
         
         @if(isset($servicesData) && count($servicesData) > 0)

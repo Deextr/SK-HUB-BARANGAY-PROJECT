@@ -87,7 +87,7 @@
             <h3 class="text-lg font-semibold text-gray-800">Reservations Report</h3>
             <p class="text-sm text-gray-500 mt-1">
                 @if($calculatedStartDate && $calculatedEndDate)
-                    Period: {{ $calculatedStartDate->format('M d, Y') }} - {{ $calculatedEndDate->format('M d, Y') }}
+                    Period: {{ $calculatedStartDate->format('M d, Y') }} to {{ $calculatedEndDate->format('M d, Y') }}
                 @else
                     Period: All Time
                 @endif
@@ -175,7 +175,7 @@
             <h3 class="text-lg font-semibold text-gray-800">Services Report</h3>
             <p class="text-sm text-gray-500 mt-1">
                 @if($calculatedStartDate && $calculatedEndDate)
-                    Period: {{ $calculatedStartDate->format('M d, Y') }} - {{ $calculatedEndDate->format('M d, Y') }}
+                    Period: {{ $calculatedStartDate->format('M d, Y') }} to {{ $calculatedEndDate->format('M d, Y') }}
                 @else
                     Period: All Time
                 @endif

@@ -427,6 +427,110 @@ class ReportsController extends Controller
             // Write UTF-8 BOM for Excel compatibility
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
             
+            // Add Executive Summary at the beginning
+            fputcsv($file, ['BARANGAY 22-C EXECUTIVE SUMMARY'], ',', '"');
+            fputcsv($file, ['Generated: ' . now()->format('Y-m-d H:i:s')], ',', '"');
+            fputcsv($file, [], ',', '"');
+            
+            // Get all data for summary
+            $reservationsData = $this->getReservationsReport($calculatedStartDate, $calculatedEndDate, false);
+            $servicesData = $this->getServicesReport($calculatedStartDate, $calculatedEndDate);
+            $peakData = $this->analyzePeakUsage($calculatedStartDate, $calculatedEndDate);
+            $engagementData = $this->analyzeUserEngagement($calculatedStartDate, $calculatedEndDate);
+            
+            // Reservations Summary
+            if ($reportType === 'all' || $reportType === 'reservations') {
+                $reservationsCol = collect($reservationsData);
+                $totalReservations = $reservationsCol->count();
+                $pending = $reservationsCol->where('status', 'pending')->count();
+                $completed = $reservationsCol->where('status', 'completed')->count();
+                $cancelled = $reservationsCol->where('status', 'cancelled')->count();
+                
+                fputcsv($file, ['RESERVATIONS SUMMARY'], ',', '"');
+                fputcsv($file, ['Total Reservations', $totalReservations], ',', '"');
+                fputcsv($file, ['Pending', $pending], ',', '"');
+                fputcsv($file, ['Completed', $completed], ',', '"');
+                fputcsv($file, ['Cancelled', $cancelled], ',', '"');
+                fputcsv($file, [], ',', '"');
+            }
+            
+            // Services Summary
+            if ($reportType === 'all' || $reportType === 'services') {
+                $servicesCount = count($servicesData);
+                $totalUsage = 0;
+                $totalUniqueUsers = 0;
+                $topServiceName = null;
+                $topServiceCount = 0;
+                
+                foreach ($servicesData as $s) {
+                    $count = $s['usage_count'] ?? 0;
+                    $totalUsage += $count;
+                    $totalUniqueUsers += ($s['unique_users'] ?? 0);
+                    
+                    if ($count > $topServiceCount) {
+                        $topServiceCount = $count;
+                        $topServiceName = $s['service']->name ?? null;
+                    }
+                }
+                
+                $avgUsage = $servicesCount > 0 ? round($totalUsage / $servicesCount, 1) : 0;
+                
+                fputcsv($file, ['SERVICES SUMMARY'], ',', '"');
+                fputcsv($file, ['Total Services', $servicesCount], ',', '"');
+                fputcsv($file, ['Total Usage', $totalUsage], ',', '"');
+                fputcsv($file, ['Unique Users', $totalUniqueUsers], ',', '"');
+                fputcsv($file, ['Top Service', $topServiceName . ' (' . $topServiceCount . ' uses)'], ',', '"');
+                fputcsv($file, ['Average Usage per Service', $avgUsage], ',', '"');
+                fputcsv($file, [], ',', '"');
+            }
+            
+            // Peak Usage Summary
+            if ($reportType === 'all' || $reportType === 'peak') {
+                $hourly = $peakData['hourly_usage'] ?? null;
+                $daily = $peakData['daily_patterns'] ?? null;
+                $topHour = null;
+                $topHourCount = 0;
+                $totalPeakReservations = 0;
+                
+                if ($hourly) {
+                    $hourCol = is_object($hourly) ? $hourly : collect($hourly);
+                    $sorted = $hourCol->sortByDesc(function($v) { return $v['total_reservations'] ?? 0; });
+                    $topHour = $sorted->keys()->first();
+                    $topHourCount = optional($sorted->first())['total_reservations'] ?? 0;
+                    $totalPeakReservations = $hourCol->reduce(function($carry, $v) { return $carry + ($v['total_reservations'] ?? 0); }, 0);
+                }
+                
+                $topDay = null;
+                if ($daily) {
+                    $dailyCol = is_object($daily) ? $daily : collect($daily);
+                    $topDay = $dailyCol->sortByDesc(function($v) { return $v; })->keys()->first();
+                }
+                
+                fputcsv($file, ['PEAK USAGE SUMMARY'], ',', '"');
+                fputcsv($file, ['Top Hour', $topHour . ' (' . $topHourCount . ' reservations)'], ',', '"');
+                fputcsv($file, ['Top Day', $topDay ?? 'N/A'], ',', '"');
+                fputcsv($file, ['Total Reservations (Peak Analysis)', $totalPeakReservations], ',', '"');
+                fputcsv($file, [], ',', '"');
+            }
+            
+            // User Engagement Summary
+            if ($reportType === 'all' || $reportType === 'engagement') {
+                $overview = $engagementData['engagement_overview'] ?? [];
+                $segments = $engagementData['user_segments'] ?? [];
+                
+                fputcsv($file, ['USER ENGAGEMENT SUMMARY'], ',', '"');
+                fputcsv($file, ['Total Approved Users', $overview['total_users'] ?? 0], ',', '"');
+                fputcsv($file, ['Active Users', $overview['active_users'] ?? 0], ',', '"');
+                fputcsv($file, ['Engagement Rate (%)', round($overview['engagement_rate'] ?? 0, 2)], ',', '"');
+                fputcsv($file, ['Total Reservations', $overview['total_reservations'] ?? 0], ',', '"');
+                fputcsv($file, ['Avg Reservations per User', round($overview['avg_reservations_per_user'] ?? 0, 2)], ',', '"');
+                fputcsv($file, [], ',', '"');
+            }
+            
+            fputcsv($file, [], ',', '"');
+            fputcsv($file, ['DETAILED REPORTS'], ',', '"');
+            fputcsv($file, [], ',', '"');
+            
             if ($reportType === 'reservations' || $reportType === 'all') {
                 // Reservations Report Header
                 fputcsv($file, ['BARANGAY 22-C RESERVATIONS REPORT'], ',', '"');
@@ -794,6 +898,104 @@ class ReportsController extends Controller
                         $user['last_activity'] ?? ''
                     ], ',', '"');
                 }
+            }
+
+
+            // Peak usage section (hourly/daily/service preferences)
+            if ($reportType === 'peak' || $reportType === 'all') {
+                fputcsv($file, [], ',', '"');
+                fputcsv($file, ['BARANGAY 22-C PEAK USAGE REPORT'], ',', '"');
+                fputcsv($file, ['Generated: ' . now()->format('Y-m-d H:i:s')], ',', '"');
+                fputcsv($file, [], ',', '"');
+
+                $peakData = $this->analyzePeakUsage($calculatedStartDate, $calculatedEndDate);
+
+                // Hourly Usage
+                fputcsv($file, ['Hourly Usage: Hour', 'Total Reservations', 'Utilization Rate (%)', 'Top Services (name:count)'], ',', '"');
+                foreach (($peakData['hourly_usage'] ?? []) as $hour => $info) {
+                    $servicesUsed = is_array($info['services_used']) || $info['services_used'] instanceof \Illuminate\Support\Collection ? $info['services_used'] : collect($info['services_used']);
+                    $servicesStr = $servicesUsed->map(function($count, $name) { return $name . ':' . $count; })->values()->all();
+                    fputcsv($file, [$hour, $info['total_reservations'] ?? 0, round($info['utilization_rate'] ?? 0, 1), implode(' | ', $servicesStr)], ',', '"');
+                }
+                fputcsv($file, [], ',', '"');
+
+                // Daily Patterns
+                fputcsv($file, ['Daily Patterns: Day', 'Reservations'], ',', '"');
+                foreach (($peakData['daily_patterns'] ?? []) as $day => $count) {
+                    fputcsv($file, [$day, $count], ',', '"');
+                }
+                fputcsv($file, [], ',', '"');
+
+                // Service Time Preferences
+                fputcsv($file, ['Service Time Preferences: Service', 'Peak Hours (hour:count)', 'Average Duration (mins)'], ',', '"');
+                foreach (($peakData['service_time_preferences'] ?? []) as $serviceName => $prefs) {
+                    $peakHours = is_array($prefs['peak_hours']) || $prefs['peak_hours'] instanceof \Illuminate\Support\Collection ? $prefs['peak_hours'] : collect($prefs['peak_hours']);
+                    $peakStr = $peakHours->map(function($count, $hour) { return $hour . ':' . $count; })->values()->all();
+                    fputcsv($file, [$serviceName, implode(' | ', $peakStr), round($prefs['average_duration'] ?? 0, 1)], ',', '"');
+                }
+                fputcsv($file, [], ',', '"');
+
+                // Seasonal Trends
+                fputcsv($file, ['Seasonal Trends: YYYY-MM', 'Reservations'], ',', '"');
+                foreach (($peakData['seasonal_trends'] ?? []) as $period => $count) {
+                    fputcsv($file, [$period, $count], ',', '"');
+                }
+            }
+
+            // User Engagement Report
+            if ($reportType === 'engagement' || $reportType === 'all') {
+                fputcsv($file, [], ',', '"');
+                fputcsv($file, ['BARANGAY 22-C USER ENGAGEMENT REPORT'], ',', '"');
+                fputcsv($file, ['Generated: ' . now()->format('Y-m-d H:i:s')], ',', '"');
+                fputcsv($file, [], ',', '"');
+
+                $engagementData = $this->analyzeUserEngagement($calculatedStartDate, $calculatedEndDate);
+                $overview = $engagementData['engagement_overview'] ?? [];
+
+                // Engagement Summary
+                fputcsv($file, ['ENGAGEMENT SUMMARY'], ',', '"');
+                fputcsv($file, ['Total Approved Users', $overview['total_users'] ?? 0], ',', '"');
+                fputcsv($file, ['Active Users', $overview['active_users'] ?? 0], ',', '"');
+                fputcsv($file, ['Engagement Rate (%)', round($overview['engagement_rate'] ?? 0, 2)], ',', '"');
+                fputcsv($file, ['Total Reservations', $overview['total_reservations'] ?? 0], ',', '"');
+                fputcsv($file, ['Avg Reservations per User', round($overview['avg_reservations_per_user'] ?? 0, 2)], ',', '"');
+                fputcsv($file, [], ',', '"');
+
+                // User Segments
+                $segments = $engagementData['user_segments'] ?? [];
+                fputcsv($file, ['USER SEGMENTS'], ',', '"');
+                fputcsv($file, ['Segment', 'Count'], ',', '"');
+                fputcsv($file, ['Super Users (5+)', isset($segments['super_users']) ? count($segments['super_users']) : 0], ',', '"');
+                fputcsv($file, ['Regular Users (2-4)', isset($segments['regular_users']) ? count($segments['regular_users']) : 0], ',', '"');
+                fputcsv($file, ['Occasional (1)', isset($segments['occasional_users']) ? count($segments['occasional_users']) : 0], ',', '"');
+                fputcsv($file, ['Inactive', isset($segments['inactive_users']) ? count($segments['inactive_users']) : 0], ',', '"');
+                fputcsv($file, [], ',', '"');
+
+                // PWD Engagement
+                $demographics = $engagementData['demographic_engagement'] ?? [];
+                $pwdData = $demographics['by_pwd_status'] ?? [];
+                $pwdInfo = $pwdData['pwd'] ?? [];
+                $nonPwdInfo = $pwdData['non_pwd'] ?? [];
+                
+                fputcsv($file, ['PWD ENGAGEMENT'], ',', '"');
+                fputcsv($file, ['Category', 'Total Users', 'Active Users', 'Engagement Rate (%)'], ',', '"');
+                fputcsv($file, ['PWD', $pwdInfo['total_users'] ?? 0, $pwdInfo['active_users'] ?? 0, round($pwdInfo['engagement_rate'] ?? 0, 2)], ',', '"');
+                fputcsv($file, ['Non-PWD', $nonPwdInfo['total_users'] ?? 0, $nonPwdInfo['active_users'] ?? 0, round($nonPwdInfo['engagement_rate'] ?? 0, 2)], ',', '"');
+                fputcsv($file, [], ',', '"');
+
+                // Top Engaged Users
+                $topUsers = $engagementData['service_preferences'] ?? collect();
+                fputcsv($file, ['TOP ENGAGED USERS'], ',', '"');
+                fputcsv($file, ['#', 'User', 'Reservations', 'Preferred Service', 'Last Activity'], ',', '"');
+                
+                if ($topUsers && count($topUsers) > 0) {
+                    $rank = 1;
+                    foreach ($topUsers->take(20) as $u) {
+                        $preferredService = is_array($u['preferred_services']) ? array_keys($u['preferred_services'])[0] ?? 'N/A' : (method_exists($u['preferred_services'], 'keys') ? $u['preferred_services']->keys()->first() : 'N/A');
+                        fputcsv($file, [$rank++, $u['user_name'] ?? 'Unknown', $u['total_reservations'] ?? 0, $preferredService, $u['last_activity'] ?? 'N/A'], ',', '"');
+                    }
+                }
+                fputcsv($file, [], ',', '"');
             }
             
             fclose($file);

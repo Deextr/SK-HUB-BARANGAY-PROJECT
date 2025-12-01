@@ -640,10 +640,10 @@ class ReservationController extends Controller
         // Validate the cancellation reason
         $validated = $request->validate([
             'cancellation_reason' => ['required', 'string', 'min:3', 'max:255'],
-            'apply_suspension' => ['nullable', 'boolean'],
+            'apply_suspension' => ['nullable', 'in:0,1'],
         ]);
         
-        $applySuspension = $request->has('apply_suspension');
+        $applySuspension = (bool) $request->input('apply_suspension', false);
         
         // Use the model method to cancel with reason and optional suspension
         $reservation->cancelWithReason(

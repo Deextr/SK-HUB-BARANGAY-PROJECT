@@ -25,17 +25,29 @@ class ResidentSettingsController extends Controller
     {
         $request->validate([
             'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'confirmed', Password::defaults()],
+            'password' => ['required', 'min:8', 'confirmed', Password::defaults()],
         ], [
             'current_password.required' => 'Current password is required.',
             'current_password.current_password' => 'The current password is incorrect.',
             'password.required' => 'New password is required.',
+            'password.min' => 'Password must be at least 8 characters long.',
             'password.confirmed' => 'The passwords do not match.',
-            'password.min' => 'Password must be at least 8 characters.',
             'password.regex' => 'Password must contain uppercase, lowercase, number, and special character.',
         ]);
 
         $user = Auth::user();
+
+        // Check if password has been used before
+        if ($user->hasUsedPassword($request->password)) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['password' => 'Please provide a stronger password that has not been used before.']);
+        }
+
+        // Record current password in history before updating
+        $user->recordPasswordHistory();
+
+        // Update password
         $user->update([
             'password' => Hash::make($request->password),
         ]);

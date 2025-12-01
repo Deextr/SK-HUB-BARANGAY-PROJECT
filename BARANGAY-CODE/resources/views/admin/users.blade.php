@@ -355,9 +355,10 @@
                         </label>
                         <textarea id="archive_reason" name="archive_reason" rows="4" 
                                   class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                                  placeholder="Please provide a detailed reason for archiving this account..."
+                                  placeholder="Please provide a reason for archiving this account..."
+                                  maxlength="100"
                                   required></textarea>
-                        <p class="mt-1 text-xs text-gray-500">This reason will be shown to the user when they try to login.</p>
+                        <p class="mt-1 text-xs text-gray-500">Maximum 100 characters. This reason will be shown to the user when they try to login.</p>
                     </div>
                 </div>
                 
@@ -378,7 +379,7 @@
 </div>
 
 <!-- Image Modal -->
-<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50">
+<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-[60]">
     <div class="flex items-center justify-center min-h-screen p-4">
         <div class="relative max-w-5xl w-full">
             <button onclick="hideImageModal()" class="absolute top-4 right-4 text-white hover:text-gray-300 bg-black bg-opacity-50 rounded-full p-2 z-10">

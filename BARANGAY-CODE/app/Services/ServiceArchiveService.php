@@ -123,28 +123,67 @@ class ServiceArchiveService
     }
 
     /**
-     * Group reservations by date and time slot
+     * Group reservations by date and overlapping time slots
+     * Detects overlapping reservations, not just exact time matches
      *
      * @param \Illuminate\Database\Eloquent\Collection $reservations
-     * @return array Grouped by "YYYY-MM-DD HH:MM-HH:MM"
+     * @return array Grouped by overlapping time slots
      */
     private function groupReservationsByTimeSlot($reservations): array
     {
         $slots = [];
+        $slotIndex = 0;
 
         foreach ($reservations as $reservation) {
-            $slotKey = $reservation->reservation_date->format('Y-m-d') . ' ' .
-                       $reservation->start_time . '-' .
-                       $reservation->end_time;
+            $found = false;
 
-            if (!isset($slots[$slotKey])) {
-                $slots[$slotKey] = [];
+            // Check if this reservation overlaps with any existing slot
+            foreach ($slots as $index => $slotReservations) {
+                if ($this->hasTimeOverlap($reservation, $slotReservations)) {
+                    $slots[$index][] = $reservation;
+                    $found = true;
+                    break;
+                }
             }
 
-            $slots[$slotKey][] = $reservation;
+            // If no overlap found, create a new slot
+            if (!$found) {
+                $slots[$slotIndex] = [$reservation];
+                $slotIndex++;
+            }
         }
 
         return $slots;
+    }
+
+    /**
+     * Check if a reservation overlaps with any reservation in a group
+     *
+     * @param Reservation $reservation
+     * @param array $slotReservations
+     * @return bool
+     */
+    private function hasTimeOverlap($reservation, $slotReservations): bool
+    {
+        foreach ($slotReservations as $existing) {
+            // Must be same date
+            if ($reservation->reservation_date->format('Y-m-d') !== $existing->reservation_date->format('Y-m-d')) {
+                continue;
+            }
+
+            // Convert times to comparable format (HH:MM:SS)
+            $newStart = strtotime($reservation->start_time);
+            $newEnd = strtotime($reservation->end_time);
+            $existingStart = strtotime($existing->start_time);
+            $existingEnd = strtotime($existing->end_time);
+
+            // Check for overlap: new starts before existing ends AND new ends after existing starts
+            if ($newStart < $existingEnd && $newEnd > $existingStart) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

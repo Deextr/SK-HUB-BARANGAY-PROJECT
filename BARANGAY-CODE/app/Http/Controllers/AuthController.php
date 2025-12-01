@@ -48,15 +48,30 @@ class AuthController extends Controller
         }
 
         $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255|regex:/^[a-zA-Z\s\-\'\.]+$/',
+            'last_name' => 'required|string|max:255|regex:/^[a-zA-Z\s\-\'\.]+$/',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6|confirmed',
+            'password' => 'required|min:8|confirmed',
             'birth_date' => 'required|date|before:today|after:' . date('Y-m-d', strtotime('-150 years')),
             'sex' => 'required|in:Male,Female',
             'is_pwd' => 'nullable|boolean',
             'id_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ], [
+            'first_name.regex' => 'First name can only contain letters, spaces, hyphens, apostrophes, and periods.',
+            'last_name.regex' => 'Last name can only contain letters, spaces, hyphens, apostrophes, and periods.',
+            'password.min' => 'Password must be at least 8 characters long.',
         ]);
+
+        // Check for duplicate first_name + last_name combination
+        $duplicateName = User::where('first_name', $request->first_name)
+            ->where('last_name', $request->last_name)
+            ->exists();
+
+        if ($duplicateName) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['name' => 'A resident with this first and last name combination already exists.']);
+        }
 
         // Handle file upload
         $idImagePath = null;
@@ -193,5 +208,15 @@ class AuthController extends Controller
             'exists' => $exists,
             'message' => $exists ? 'Email is already in use.' : 'Email is available.'
         ]);
+    }
+
+    // Reset registration workflow
+    public function resetRegistration(Request $request)
+    {
+        // Clear NDA session to allow user to start fresh
+        $request->session()->forget('nda_accepted');
+        $request->session()->forget('nda_accepted_at');
+        
+        return redirect()->route('register.nda');
     }
 }

@@ -32,7 +32,7 @@
                 <!-- Suspension Option -->
                 <div class="flex items-start">
                     <div class="flex items-center h-5">
-                        <input id="apply_suspension" name="apply_suspension" type="checkbox" class="h-4 w-4 text-yellow-500 focus:ring-yellow-500 border-gray-300 rounded">
+                        <input id="apply_suspension" name="apply_suspension" type="checkbox" value="1" class="h-4 w-4 text-yellow-500 focus:ring-yellow-500 border-gray-300 rounded">
                     </div>
                     <div class="ml-3 text-sm">
                         <label for="apply_suspension" class="font-medium text-gray-700">Apply Suspension Warning</label>

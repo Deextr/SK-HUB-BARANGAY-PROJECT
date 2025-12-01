@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 22, 2025 at 05:03 PM
+-- Generation Time: Nov 30, 2025 at 12:56 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -67,9 +67,8 @@ CREATE TABLE `closure_periods` (
 --
 
 INSERT INTO `closure_periods` (`id`, `start_date`, `end_date`, `reason`, `status`, `deleted_at`, `created_at`, `updated_at`) VALUES
-(1, '2025-11-08', '2025-11-09', NULL, 'active', NULL, '2025-11-07 04:32:31', '2025-11-07 04:32:31'),
-(2, '2025-11-13', '2025-11-13', 'Outing', 'pending', '2025-11-12 10:51:58', '2025-11-12 10:51:55', '2025-11-12 10:51:58'),
-(3, '2025-11-15', '2025-11-15', NULL, 'pending', '2025-11-15 13:45:00', '2025-11-12 13:39:21', '2025-11-15 13:45:00');
+(1, '2025-11-30', '2025-11-30', 'meeting', 'active', NULL, '2025-11-30 08:39:05', '2025-11-30 08:39:05'),
+(2, '2025-12-01', '2025-12-01', 'meeting', 'pending', NULL, '2025-11-30 09:42:13', '2025-11-30 09:51:10');
 
 -- --------------------------------------------------------
 
@@ -148,15 +147,37 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (7, '2025_11_07_121854_optimize_users_table_structure', 1),
 (8, '2025_11_07_121859_optimize_services_table_structure', 1),
 (9, '2025_11_07_121904_optimize_reservations_table_structure', 1),
-(10, '2025_11_12_000001_make_closure_periods_full_day', 2),
-(11, '2025_11_15_201938_add_age_sex_is_pwd_to_users_table', 2),
-(12, '2025_11_16_161336_replace_age_with_birth_date_in_users_table', 3),
-(14, '2025_11_16_180000_add_reservation_reason_to_reservations_table', 4),
-(15, '2025_11_16_190000_add_suspension_fields_to_users_table', 5),
-(16, '2025_11_16_190100_add_cancellation_reason_to_reservations_table', 5),
-(17, '2025_11_16_214357_add_archive_fields_to_users_table', 6),
-(18, '2025_11_22_000000_create_service_archives_table', 7),
-(19, '2025_11_22_000001_add_cancelled_by_to_reservations_table', 8);
+(10, '2025_11_12_000001_make_closure_periods_full_day', 1),
+(11, '2025_11_15_201938_add_age_sex_is_pwd_to_users_table', 1),
+(12, '2025_11_16_161336_replace_age_with_birth_date_in_users_table', 1),
+(13, '2025_11_16_180000_add_reservation_reason_to_reservations_table', 1),
+(14, '2025_11_16_190000_add_suspension_fields_to_users_table', 1),
+(15, '2025_11_16_190100_add_cancellation_reason_to_reservations_table', 1),
+(16, '2025_11_16_214357_add_archive_fields_to_users_table', 1),
+(17, '2025_11_22_000000_create_service_archives_table', 1),
+(18, '2025_11_22_000001_add_cancelled_by_to_reservations_table', 1),
+(19, '2025_11_23_000000_add_partial_rejection_to_users_table', 1),
+(20, '2025_11_30_000000_create_password_histories_table', 2);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `password_histories`
+--
+
+CREATE TABLE `password_histories` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
+  `changed_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `password_histories`
+--
+
+INSERT INTO `password_histories` (`id`, `user_id`, `password_hash`, `changed_at`) VALUES
+(1, 18, '$2y$12$XNSrHczeG8HnnBsAPSj5o.yyTrwHoaQdSKLBwqwGB5FTp/SdIchyO', '2025-11-30 11:37:22');
 
 -- --------------------------------------------------------
 
@@ -205,35 +226,9 @@ CREATE TABLE `reservations` (
 --
 
 INSERT INTO `reservations` (`id`, `user_id`, `service_id`, `closure_period_id`, `reference_no`, `reservation_date`, `start_time`, `end_time`, `actual_time_in`, `actual_time_out`, `units_reserved`, `status`, `cancellation_reason`, `suspension_applied`, `cancelled_at`, `cancelled_by`, `preferences`, `reservation_reason`, `other_reason`, `created_at`, `updated_at`) VALUES
-(1, 2, 1, NULL, 'RSV-20251107-8E5A11', '2025-11-07', '08:00:00', '08:30:00', '19:23:00', '17:23:00', 1, 'completed', NULL, 0, NULL, NULL, NULL, NULL, NULL, '2025-11-07 04:33:52', '2025-11-16 11:25:45'),
-(2, 4, 1, NULL, 'RSV-20251107-B45628', '2025-11-07', '13:00:00', '13:30:00', NULL, NULL, 1, 'cancelled', NULL, 0, NULL, NULL, NULL, NULL, NULL, '2025-11-07 04:50:56', '2025-11-07 04:58:53'),
-(3, 4, 1, NULL, 'RSV-20251107-4B3E71', '2025-11-07', '13:30:00', '15:00:00', NULL, NULL, 1, 'cancelled', NULL, 0, NULL, NULL, NULL, NULL, NULL, '2025-11-07 05:02:51', '2025-11-15 14:06:18'),
-(4, 3, 1, NULL, 'RSV-20251107-320349', '2025-11-10', '08:00:00', '08:30:00', NULL, NULL, 1, 'cancelled', NULL, 0, NULL, NULL, NULL, NULL, NULL, '2025-11-07 05:19:48', '2025-11-07 05:20:30'),
-(5, 2, 1, NULL, 'RSV-20251110-AD392B', '2025-11-11', '08:00:00', '08:30:00', NULL, NULL, 1, 'cancelled', NULL, 0, NULL, NULL, NULL, NULL, NULL, '2025-11-10 06:39:22', '2025-11-10 06:39:32'),
-(6, 2, 1, NULL, 'RSV-20251110-F427E0', '2025-11-13', '08:00:00', '08:30:00', NULL, NULL, 1, 'cancelled', NULL, 0, NULL, NULL, NULL, NULL, NULL, '2025-11-10 06:45:40', '2025-11-10 06:46:30'),
-(7, 2, 1, NULL, 'RSV-20251111-9C5029', '2025-11-12', '08:00:00', '08:30:00', NULL, NULL, 1, 'cancelled', NULL, 0, NULL, NULL, NULL, NULL, NULL, '2025-11-11 06:30:46', '2025-11-11 06:31:06'),
-(8, 2, 3, NULL, 'RSV-20251111-E658F3', '2025-11-13', '08:00:00', '09:30:00', NULL, NULL, 1, 'cancelled', NULL, 0, NULL, NULL, NULL, NULL, NULL, '2025-11-11 06:52:03', '2025-11-11 06:52:20'),
-(9, 2, 1, NULL, 'RSV-20251113-990973', '2025-11-14', '08:00:00', '08:30:00', NULL, NULL, 1, 'cancelled', NULL, 0, NULL, NULL, NULL, NULL, NULL, '2025-11-13 01:23:26', '2025-11-13 01:24:00'),
-(10, 2, 1, NULL, 'RSV-20251114-317F9B', '2025-11-14', '09:30:00', '11:30:00', NULL, NULL, 1, 'cancelled', NULL, 0, NULL, NULL, NULL, NULL, NULL, '2025-11-14 01:29:50', '2025-11-15 14:06:12'),
-(11, 8, 1, NULL, 'RSV-20251114-25DAAF', '2025-11-14', '10:00:00', '11:00:00', NULL, NULL, 1, 'cancelled', NULL, 0, NULL, NULL, 'wheelchair', NULL, NULL, '2025-11-14 01:37:58', '2025-11-14 01:40:14'),
-(12, 2, 1, NULL, 'RSV-20251116-A8841A', '2025-11-18', '08:00:00', '08:30:00', NULL, NULL, 1, 'cancelled', NULL, 0, NULL, NULL, NULL, NULL, NULL, '2025-11-16 10:08:47', '2025-11-16 10:10:01'),
-(13, 2, 2, NULL, 'RSV-20251116-A433F0', '2025-11-17', '08:00:00', '08:30:00', NULL, NULL, 1, 'cancelled', NULL, 0, NULL, NULL, NULL, 'Others', 'qweqweqw qweqw qweqw', '2025-11-16 10:13:16', '2025-11-16 10:13:30'),
-(14, 2, 1, NULL, 'RSV-20251116-0CEE6E', '2025-11-17', '13:00:00', '15:00:00', NULL, '17:00:00', 1, 'completed', NULL, 0, NULL, NULL, NULL, 'Surfing', NULL, '2025-11-16 11:06:51', '2025-11-16 11:22:16'),
-(15, 3, 1, NULL, 'RSV-20251116-6275E0', '2025-11-17', '08:30:00', '09:30:00', '22:45:00', '23:46:00', 1, 'cancelled', 'cancel lang', 0, '2025-11-18 03:02:05', NULL, NULL, 'Surfing', NULL, '2025-11-16 11:41:05', '2025-11-18 03:02:05'),
-(16, 8, 1, NULL, 'RSV-20251116-5A2CD3', '2025-11-17', '10:00:00', '12:00:00', NULL, NULL, 1, 'cancelled', 'cancel lang', 0, '2025-11-18 03:02:15', NULL, NULL, 'Surfing', NULL, '2025-11-16 12:12:36', '2025-11-18 03:02:15'),
-(17, 2, 1, NULL, 'RSV-20251118-16E290', '2025-11-18', '08:30:00', '09:00:00', '09:47:00', '10:11:00', 1, 'completed', NULL, 0, NULL, NULL, NULL, 'Surfing', NULL, '2025-11-18 00:25:07', '2025-11-18 02:45:57'),
-(18, 3, 1, NULL, 'RSV-20251118-3311B3', '2025-11-18', '11:00:00', '11:30:00', '11:16:00', '11:30:00', 1, 'completed', NULL, 0, NULL, NULL, NULL, 'Surfing', NULL, '2025-11-18 02:46:53', '2025-11-18 03:16:47'),
-(19, 4, 1, NULL, 'RSV-20251118-EB23B8', '2025-11-18', '12:00:00', '13:30:00', NULL, NULL, 1, 'cancelled', 'cancel for testing', 0, '2025-11-18 03:18:38', NULL, NULL, 'Surfing', NULL, '2025-11-18 03:18:04', '2025-11-18 03:18:38'),
-(20, 4, 1, NULL, 'RSV-20251118-0B541C', '2025-11-18', '13:00:00', '13:30:00', NULL, NULL, 1, 'cancelled', 'wala nisipot', 0, '2025-11-18 05:35:42', NULL, NULL, 'Surfing', NULL, '2025-11-18 04:37:28', '2025-11-18 05:35:42'),
-(21, 8, 1, NULL, 'RSV-20251118-F5198E', '2025-11-18', '13:00:00', '13:30:00', NULL, NULL, 1, 'cancelled', NULL, 0, NULL, NULL, NULL, 'Surfing', NULL, '2025-11-18 04:58:10', '2025-11-18 04:58:20'),
-(22, 8, 1, NULL, 'RSV-20251118-825AFC', '2025-11-18', '13:00:00', '13:30:00', NULL, NULL, 1, 'cancelled', NULL, 0, NULL, NULL, NULL, 'Surfing', NULL, '2025-11-18 04:59:14', '2025-11-18 05:00:31'),
-(23, 10, 3, NULL, 'RSV-20251118-A8EE39', '2025-11-18', '14:00:00', '14:30:00', '14:19:00', '14:29:00', 1, 'completed', NULL, 0, NULL, NULL, NULL, 'Others', 'Watch a presentation', '2025-11-18 05:43:01', '2025-11-18 06:29:49'),
-(24, 8, 1, NULL, 'RSV-20251118-336148', '2025-11-18', '15:00:00', '16:00:00', '15:33:00', '15:34:00', 1, 'completed', NULL, 0, NULL, NULL, NULL, 'Surfing', NULL, '2025-11-18 06:56:29', '2025-11-18 07:33:33'),
-(25, 2, 1, NULL, 'RSV-20251122-0F2ACB', '2025-11-23', '08:00:00', '08:30:00', NULL, NULL, 1, 'cancelled', NULL, 0, NULL, NULL, NULL, 'Surfing', NULL, '2025-11-22 15:17:54', '2025-11-22 15:18:24'),
-(26, 2, 1, NULL, 'RSV-20251122-8227D1', '2025-11-24', '08:00:00', '08:30:00', NULL, NULL, 1, 'cancelled', 'For testing', 0, '2025-11-22 15:23:36', NULL, NULL, 'Surfing', NULL, '2025-11-22 15:23:23', '2025-11-22 15:23:36'),
-(27, 2, 2, NULL, 'RSV-20251122-6D1EC0', '2025-11-23', '08:00:00', '08:30:00', NULL, NULL, 1, 'cancelled', NULL, 0, '2025-11-22 15:33:29', 2, NULL, 'Reading', NULL, '2025-11-22 15:33:20', '2025-11-22 15:33:29'),
-(28, 2, 1, NULL, 'RSV-20251122-86E6BA', '2025-11-28', '08:00:00', '08:30:00', NULL, NULL, 1, 'cancelled', NULL, 0, '2025-11-22 15:34:55', 2, NULL, 'Surfing', NULL, '2025-11-22 15:34:51', '2025-11-22 15:34:55'),
-(29, 2, 1, NULL, 'RSV-20251122-30F98D', '2025-11-27', '08:00:00', '08:30:00', NULL, NULL, 1, 'cancelled', 'testing lang', 0, '2025-11-22 15:41:56', 6, NULL, 'Surfing', NULL, '2025-11-22 15:41:47', '2025-11-22 15:41:56');
+(1, 2, 1, NULL, 'RSV-20251130-9106E0', '2025-12-01', '08:00:00', '09:00:00', NULL, NULL, 1, 'pending', NULL, 0, NULL, NULL, NULL, 'Surfing', NULL, '2025-11-30 08:32:59', '2025-11-30 08:32:59'),
+(2, 3, 1, NULL, 'RSV-20251130-CC01AE', '2025-12-01', '08:00:00', '08:30:00', NULL, NULL, 1, 'pending', NULL, 0, NULL, NULL, NULL, 'Surfing', NULL, '2025-11-30 08:33:33', '2025-11-30 08:33:33'),
+(3, 4, 1, NULL, 'RSV-20251130-21B3CE', '2025-12-01', '08:00:00', '08:30:00', NULL, NULL, 1, 'cancelled', 'Service capacity reduced due to unit archival. Cancelled to maintain fair booking.', 0, '2025-11-30 08:35:01', NULL, NULL, 'Surfing', NULL, '2025-11-30 08:34:02', '2025-11-30 08:35:01');
 
 -- --------------------------------------------------------
 
@@ -257,16 +252,10 @@ CREATE TABLE `services` (
 --
 
 INSERT INTO `services` (`id`, `name`, `description`, `capacity_units`, `is_active`, `deleted_at`, `created_at`, `updated_at`) VALUES
-(1, 'PC', 'Med-Specs PC', 8, 1, NULL, '2025-11-07 04:30:58', '2025-11-07 04:30:58'),
-(2, 'Study Table', 'Study Area', 8, 1, NULL, '2025-11-07 04:31:14', '2025-11-07 04:31:14'),
-(3, 'TV', 'Samsung TV', 1, 1, NULL, '2025-11-07 04:31:43', '2025-11-22 13:36:16'),
-(4, 'Gaming Chair', 'Bangko', 5, 1, '2025-11-12 10:51:28', '2025-11-12 10:51:16', '2025-11-12 10:51:28'),
-(5, 'test', 'test only', 5, 0, NULL, '2025-11-22 10:48:04', '2025-11-22 10:48:30'),
-(6, 'test1', 'testonly', 12, 0, NULL, '2025-11-22 10:48:13', '2025-11-22 10:48:25'),
-(7, 'test2', 'test only', 12, 0, NULL, '2025-11-22 10:48:41', '2025-11-22 10:48:57'),
-(8, 'test3', 'testonly', 11, 0, NULL, '2025-11-22 10:48:50', '2025-11-22 10:49:10'),
-(9, 'test4', 'testing', 6, 0, NULL, '2025-11-22 11:39:43', '2025-11-22 13:33:05'),
-(10, 'test 5', 'testing purpose', 2, 0, NULL, '2025-11-22 11:40:00', '2025-11-22 11:41:02');
+(1, 'PC TEST', 'testing', 2, 1, NULL, '2025-11-30 08:31:39', '2025-11-30 08:35:01'),
+(2, 'PC', 'high-end PC', 8, 1, NULL, '2025-11-30 08:31:48', '2025-11-30 08:31:48'),
+(3, 'TV', 'For presentation', 1, 1, NULL, '2025-11-30 08:32:01', '2025-11-30 08:32:01'),
+(4, 'Study Table', 'it depends on chairs available', 8, 1, NULL, '2025-11-30 08:32:28', '2025-11-30 08:32:28');
 
 -- --------------------------------------------------------
 
@@ -277,15 +266,22 @@ INSERT INTO `services` (`id`, `name`, `description`, `capacity_units`, `is_activ
 CREATE TABLE `service_archives` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `service_id` bigint(20) UNSIGNED NOT NULL,
-  `units_archived` smallint(5) UNSIGNED NOT NULL,
-  `capacity_before` smallint(5) UNSIGNED NOT NULL,
-  `capacity_after` smallint(5) UNSIGNED NOT NULL,
-  `reason` text NOT NULL,
-  `reservations_cancelled` int(10) UNSIGNED NOT NULL DEFAULT 0,
+  `units_archived` int(11) NOT NULL,
+  `capacity_before` int(11) NOT NULL,
+  `capacity_after` int(11) NOT NULL,
+  `reason` varchar(255) NOT NULL,
+  `reservations_cancelled` int(11) NOT NULL DEFAULT 0,
   `cancelled_reservation_ids` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`cancelled_reservation_ids`)),
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `service_archives`
+--
+
+INSERT INTO `service_archives` (`id`, `service_id`, `units_archived`, `capacity_before`, `capacity_after`, `reason`, `reservations_cancelled`, `cancelled_reservation_ids`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, 3, 2, 'testing', 1, '[3]', '2025-11-30 08:35:01', '2025-11-30 08:35:01');
 
 -- --------------------------------------------------------
 
@@ -307,8 +303,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('6K5Owxx4mo6y19CvHGFL9E5XV3LNZwqb0wVpc4zn', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoidkhlOEdDREszM1dIU05VRnlaZDlKMDU2b1hVM1VDeGhmQ29hcmNMOSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9sb2dpbiI7fX0=', 1763827371),
-('tt80nAR9gDCfkqYoz2kcdwZbURKyhKI7wwJp0Qgk', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoibjhpN2JVZTQ5aVgwYTA4ckpYQmlzMUhyQU1SVEE4R0FENnJYMm9IUCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9sb2dpbiI7fX0=', 1763827391);
+('CeBl1ivkw8KzWz3P9oBaDCEWe6kvwAbIfhOBaS5I', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoibmdyR3IzeWZKVXoyeE1HWkVqQzhMMnBkdExOTzVwTkhXbGJta1FjaCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9yZWdpc3RlciI7fXM6MTI6Im5kYV9hY2NlcHRlZCI7YjoxO3M6MTU6Im5kYV9hY2NlcHRlZF9hdCI7TzoyNToiSWxsdW1pbmF0ZVxTdXBwb3J0XENhcmJvbiI6Mzp7czo0OiJkYXRlIjtzOjI2OiIyMDI1LTExLTMwIDE5OjQwOjE3LjQ5NDAzMyI7czoxMzoidGltZXpvbmVfdHlwZSI7aTozO3M6ODoidGltZXpvbmUiO3M6MTE6IkFzaWEvTWFuaWxhIjt9fQ==', 1764502817),
+('zCMKsY4wWMcCg0F4pStlwY8SGRC5BV5GXDYzTjk4', 2, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoienJvRmtQYUtXVW5GeERrTWxsWTRsdU9QQzFLSjRsOVF6UklyamZnTSI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mzk6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9yZXNpZGVudC9zZXR0aW5ncyI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjI7fQ==', 1764501869);
 
 -- --------------------------------------------------------
 
@@ -327,7 +323,7 @@ CREATE TABLE `users` (
   `email_verified_at` timestamp NULL DEFAULT NULL,
   `password` varchar(255) NOT NULL,
   `is_admin` tinyint(1) NOT NULL DEFAULT 0,
-  `account_status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  `account_status` enum('pending','approved','partially_rejected','rejected') NOT NULL,
   `suspension_count` int(10) UNSIGNED NOT NULL DEFAULT 0,
   `is_suspended` tinyint(1) NOT NULL DEFAULT 0,
   `is_archived` tinyint(1) NOT NULL DEFAULT 0,
@@ -338,6 +334,9 @@ CREATE TABLE `users` (
   `rejection_reason` text DEFAULT NULL,
   `approved_at` timestamp NULL DEFAULT NULL,
   `rejected_at` timestamp NULL DEFAULT NULL,
+  `partially_rejected_at` timestamp NULL DEFAULT NULL,
+  `partially_rejected_reason` text DEFAULT NULL,
+  `resubmission_count` int(11) NOT NULL DEFAULT 0,
   `remember_token` varchar(100) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
@@ -347,20 +346,29 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `first_name`, `last_name`, `birth_date`, `sex`, `is_pwd`, `email`, `email_verified_at`, `password`, `is_admin`, `account_status`, `suspension_count`, `is_suspended`, `is_archived`, `archive_reason`, `archived_at`, `suspension_end_date`, `id_image_path`, `rejection_reason`, `approved_at`, `rejected_at`, `remember_token`, `created_at`, `updated_at`) VALUES
-(1, 'Admin', 'User', NULL, NULL, 0, 'admin@example.com', NULL, '$2y$12$Otkxflz7bBftsowqBAWYK.9QDstc.NytLLD.tj0KXBIZBaIleiprC', 1, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-11-07 04:24:37', '2025-11-07 04:24:37'),
-(2, 'dexter', 'ramos', NULL, 'Male', 0, 'dexter@gmail.com', NULL, '$2y$12$4ZtNaKOp44UeiBnNPgIvMO9q60M9dndKVIZCMXdY3KBQ0AJXRRMTW', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, 'id_images/Ns65vTVI0Ipdv8etILXZ5yplPQRB8a6yHKFPYWvn.jpg', NULL, '2025-11-07 04:30:15', NULL, NULL, '2025-11-07 04:27:24', '2025-11-07 04:30:15'),
-(3, 'nathaniel', 'bayona', NULL, 'Male', 0, 'nath@gmail.com', NULL, '$2y$12$ZIElb4wZV4KYyTNGuEGSNuiZAfnucazJwBHVmUB2zwrI21yngIBqu', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, 'id_images/IiUlejX0nTHNBLUtQ9avk8X3o0kQQEMX5W7cCs5z.jpg', NULL, '2025-11-07 04:30:12', NULL, NULL, '2025-11-07 04:28:21', '2025-11-07 04:30:12'),
-(4, 'nesa', 'Limpuasan', NULL, 'Female', 0, 'nesa@gmail.com', NULL, '$2y$12$t/uZaph8kEfEs9UTyvsucOzOd.Ii5GZEnqgH/xht6MtpYAZvnX5Sm', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, 'id_images/lh2btGOYvTDjSnsqHzlOdnaNjZKMiGU2WO1KhR3t.jpg', NULL, '2025-11-07 04:30:09', NULL, NULL, '2025-11-07 04:28:43', '2025-11-07 04:30:09'),
-(5, 'christian', 'torion', NULL, NULL, 0, 'chan@gmail.com', NULL, '$2y$12$roXAE.qFlXmADz6zT..dG.7ZfvTvoJXLn6LF.r9/Jkil07lRqgn7i', 0, 'rejected', 0, 0, 0, NULL, NULL, NULL, 'id_images/qUA9Y81E4jqjRq5Cr6pPNEf5Lqdy4YHW9tGF7LcR.jpg', 'Please used your ID', NULL, '2025-11-07 04:30:02', NULL, '2025-11-07 04:29:13', '2025-11-07 04:30:02'),
-(6, 'Admin', 'User', NULL, NULL, 0, 'admin@gmail.com', NULL, '$2y$12$Y0.SqhfH7UkF0T9tJ1HWSOiwirsU4uLPOzNahJO/rK8n4of7gW466', 1, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-11-07 04:43:54', '2025-11-07 04:43:54'),
-(7, 'Raven', 'Canedo', NULL, NULL, 0, 'raven@gmail.com', NULL, '$2y$12$CLf3dPp48e7xIQSP.HpUQOWRMMMNW4z/KMAJ/.rKnKvCRt1//zj8q', 0, 'rejected', 0, 0, 0, NULL, NULL, NULL, 'id_images/PqTPDShae8Cfi53KVCnvCsQj9ufKokzvSAaovCs8.jpg', 'change your id', NULL, '2025-11-14 01:34:22', NULL, '2025-11-13 00:27:53', '2025-11-14 01:34:22'),
-(8, 'Razell', 'Ponce', NULL, NULL, 0, 'razel@gmail.com', NULL, '$2y$12$oYKrpEnjgCp0YtawaW5tRuOvOjNVVUHA26dCgu1tT8tp8yoi8wjOu', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, 'id_images/VOZHkH5clWUPoqeQRdrphEj7cNd5gsx8lTGQly2N.jpg', NULL, '2025-11-14 01:33:58', NULL, NULL, '2025-11-14 01:32:55', '2025-11-14 01:33:58'),
-(9, 'Loyd', 'Aure', '2004-11-10', 'Male', 0, 'loyd@gmail.com', NULL, '$2y$12$rSdseIRKLmD1SdpMr19zgOi9hESAokrO6yfM0.gEj/M73cuhW8a2q', 0, 'approved', 0, 0, 1, 'You didn\'t login for 3 months.', '2025-11-16 14:04:50', NULL, 'id_images/BvntE6fwHbyhOGpGegOrQc7DE9E7IqLj1DKlkwrW.jpg', NULL, '2025-11-16 14:04:21', NULL, NULL, '2025-11-16 08:16:33', '2025-11-16 14:04:50'),
-(10, 'Brix', 'Aure', '2000-10-20', 'Male', 1, 'brix@gmail.com', NULL, '$2y$12$KobS8bnmKckVXPM/EiSuIu8DOAVEf4er8QEiZcmGMwKcRAUkmf7RC', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, 'id_images/8PiBUyEdCZDXXKAhtcuA4FcgF8MVt6w9B4ZI5MTA.jpg', NULL, '2025-11-18 05:41:59', NULL, NULL, '2025-11-16 14:21:55', '2025-11-18 05:41:59'),
-(11, 'Do Not', 'Login', '2003-01-01', 'Male', 0, 'donotlogin@gmail.com', NULL, '$2y$12$u3e84BJ7RF5akXNcNdG4O.Mh5N2zBUJwlI.xUvyVGjAEvepEj42Lu', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, 'id_images/mQpqer6jBQHBCXRsU5WICJPkgkQeY0Ff1gWNvOeF.jpg', NULL, '2025-11-18 05:42:11', NULL, NULL, '2025-11-18 05:41:30', '2025-11-18 05:42:11'),
-(12, 'Uca', 'Ramos', '2000-10-20', 'Male', 0, 'uca@gmail.com', NULL, '$2y$12$kmUtFECco2QSVpZIdWdbouMJ17w0t2HQegMkYo6fshMcxDamFCJuK', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, 'id_images/AG08btq8TYIohbeFwgYrIR4DmEl6ovCKfvTKAjhg.jpg', NULL, '2025-11-18 07:07:22', NULL, NULL, '2025-11-18 07:07:11', '2025-11-18 07:07:22'),
-(13, 'Jr', 'Loayon', '2004-02-18', 'Male', 0, 'jr@gmail.com', NULL, '$2y$12$DPH5oBsE.Mzapb5AvvhvW.TMeipwsTN8RwHx6pxNLxU1tgyEN1bG2', 0, 'rejected', 0, 0, 0, NULL, NULL, NULL, 'id_images/JCdrJvxU5lyUJIBgL6UOUJgZyvs7f38WlGCAs6C2.jpg', 'Mali imong ID tol', NULL, '2025-11-19 02:33:10', NULL, '2025-11-19 02:32:16', '2025-11-19 02:33:10');
+INSERT INTO `users` (`id`, `first_name`, `last_name`, `birth_date`, `sex`, `is_pwd`, `email`, `email_verified_at`, `password`, `is_admin`, `account_status`, `suspension_count`, `is_suspended`, `is_archived`, `archive_reason`, `archived_at`, `suspension_end_date`, `id_image_path`, `rejection_reason`, `approved_at`, `rejected_at`, `partially_rejected_at`, `partially_rejected_reason`, `resubmission_count`, `remember_token`, `created_at`, `updated_at`) VALUES
+(1, 'Admin', 'User', NULL, NULL, 0, 'admin@gmail.com', NULL, '$2y$12$ZFH6LR1DSWgKu9vbssibk.t60xagQdfFB3mgybIUj7kMPN4SwPKra', 1, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:18:06', '2025-11-30 08:18:06'),
+(2, 'Dexter', 'Ramos', '1990-05-15', 'Male', 0, 'dexter@gmail.com', NULL, '$2y$12$owu95HTN.qU1.9vYcyv9eu9onQDg7T1MoYp0vYTewpBIbmqPAaUbi', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:28:57', '2025-11-30 08:28:57'),
+(3, 'Nathaniel', 'Bayona', '1992-08-22', 'Male', 0, 'nathaniel@gmail.com', NULL, '$2y$12$rHI8rDw0bjAGOouF.wM8ougyKV1lETtycwMYJ31609UBd01tra8jG', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:28:58', '2025-11-30 08:28:58'),
+(4, 'Park', 'Gica', '1988-03-10', 'Male', 0, 'park@gmail.com', NULL, '$2y$12$grv/0tGeaqsm1zDWyQBwUurjWW39enU1s/KAY4vIVYUAbwMF4k0lC', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:28:58', '2025-11-30 08:28:58'),
+(5, 'Christian', 'Torion', '1995-11-05', 'Male', 0, 'chan@gmail.com', NULL, '$2y$12$WrFqBq8NpRlRLuuqfVV1z.1Sb568xkKjdkAuOxl7aXHOpmBUO/W8m', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:28:58', '2025-11-30 08:28:58'),
+(6, 'Rocky', 'Adaya', '1991-07-18', 'Male', 0, 'rocky@gmail.com', NULL, '$2y$12$o.7aXbvD5BdF.rlDbi1/nezcIJ7E5QkL7kVrMLd2XTBxtkyyM4aeu', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:28:58', '2025-11-30 08:28:58'),
+(7, 'Juan', 'Santos', '1993-02-14', 'Male', 0, 'juan@gmail.com', NULL, '$2y$12$RXNG6rgAqEzhz.avVqlMuuN467IfN65AxonhudD2I/m9FkR2iwuOq', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:28:59', '2025-11-30 08:28:59'),
+(8, 'Miguel', 'Cruz', '1989-09-28', 'Male', 0, 'miguel@gmail.com', NULL, '$2y$12$5EIV2fUxpBuB1wyHVCqdjOpGI.xn6F.U7WAUur8WPxPANZBRbJqhu', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:28:59', '2025-11-30 08:28:59'),
+(9, 'Carlos', 'Reyes', '1994-04-03', 'Male', 0, 'carlos@gmail.com', NULL, '$2y$12$pBKC7OsHpWt7evU2ZwApmOaZrEDYpM9aDprG3eH2phYkCNO7ZL6hC', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:28:59', '2025-11-30 08:28:59'),
+(10, 'Antonio', 'Flores', '1987-12-20', 'Male', 0, 'antonio@gmail.com', NULL, '$2y$12$NxpMKbz6UUKbDWThs74xS.2z2H.B5gdkFFxOzSV54CnGNG0MjO0LS', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:28:59', '2025-11-30 08:28:59'),
+(11, 'Roberto', 'Morales', '1996-06-11', 'Male', 0, 'roberto@gmail.com', NULL, '$2y$12$KisWw8iEXnyKmXxOfB/BGeg7GAl2U96StPLe4FH1c.WcLKdOmAkwy', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:29:00', '2025-11-30 08:29:00'),
+(12, 'Maria', 'Garcia', '1991-01-08', 'Female', 0, 'maria@gmail.com', NULL, '$2y$12$dzxz4xis/B1wJttX4Eyxae.3xdMbiBKuH90OrzqWlAKs0sR4yQin6', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:29:00', '2025-11-30 08:29:00'),
+(13, 'Rosa', 'Lopez', '1993-05-19', 'Female', 0, 'rosa@gmail.com', NULL, '$2y$12$n0St4ZDhctWAjXZYoMZC5OU0GEjbxxuHzLWtgEV2EIOY30VD5Wtc2', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:29:00', '2025-11-30 08:29:00'),
+(14, 'Ana', 'Martinez', '1990-10-25', 'Female', 0, 'ana@gmail.com', NULL, '$2y$12$q/EQT6969T17IhE8VFXN0uvsq/aDWxvUmmEN5HNOrGk1DoN/RWHxG', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:29:01', '2025-11-30 08:29:01'),
+(15, 'Sofia', 'Hernandez', '1994-03-12', 'Female', 0, 'sofia@gmail.com', NULL, '$2y$12$TqPvTTjcr0e2EITJR1bjxOJodsj2oLfiScwzMEEnxmYvJ0nS/tqO6', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:29:01', '2025-11-30 08:29:01'),
+(16, 'Isabella', 'Perez', '1992-07-30', 'Female', 0, 'isabella@gmail.com', NULL, '$2y$12$baL8dbrgAg.17R/8145qjuTmT0LsRI5B8ZAXXkmqbpkGBkf03y4ZC', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:29:01', '2025-11-30 08:29:01'),
+(17, 'Carmen', 'Sanchez', '1988-11-06', 'Female', 0, 'carmen@gmail.com', NULL, '$2y$12$YSI2o0TBc6XLLKA6rDC2Pu6HYO9ZLTuOOjpSl8zbaPH.dJ36Rebz2', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:29:01', '2025-11-30 08:29:01'),
+(18, 'Elena', 'Ramirez', '1995-02-17', 'Female', 0, 'elena@gmail.com', NULL, '$2y$12$7755gYtqhRExD58FUax4zu.DtL0PmrjGvvUHzfwQhMj37Vls3OwIm', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:29:02', '2025-11-30 11:37:22'),
+(19, 'Lucia', 'Torres', '1989-08-09', 'Female', 0, 'lucia@gmail.com', NULL, '$2y$12$1cRSVdrQ5hfwv.HDKk4WYu6szj0eS/AqSJnKEXxlgD0ZwB2qBlDke', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:29:02', '2025-11-30 08:29:02'),
+(20, 'Daniela', 'Rivera', '1996-04-21', 'Female', 0, 'daniela@gmail.com', NULL, '$2y$12$U9AWY3qvUUXXFaWU3LeQte.c.gZB4meOzdV1hrkunh8dmljknbMKS', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:29:02', '2025-11-30 08:29:02'),
+(21, 'Valentina', 'Castillo', '1991-09-14', 'Female', 0, 'valentina@gmail.com', NULL, '$2y$12$i8MVOVcfH98rWBUR9AjTEedrDCY7Mlv7K9bEwSObioiyw6lAX0zGW', 0, 'approved', 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:29:02', '2025-11-30 08:29:02'),
+(22, 'Nesa', 'Limpuasan', '2005-02-16', 'Female', 0, 'nesa@gmail.com', NULL, '$2y$12$QTydHhpRMA.0fDWgUVBwLeHqO.RBKWKfDwrrM/w4Cp1BCL9sA00Au', 0, 'pending', 0, 0, 0, NULL, NULL, NULL, 'id_images/dx9hjvl2Ma4N1BbvUOikGDQT77xgv4axWnh9Nw77.jpg', NULL, NULL, NULL, NULL, NULL, 0, NULL, '2025-11-30 08:44:40', '2025-11-30 08:44:40');
 
 --
 -- Indexes for dumped tables
@@ -413,6 +421,13 @@ ALTER TABLE `migrations`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `password_histories`
+--
+ALTER TABLE `password_histories`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `password_histories_user_id_changed_at_index` (`user_id`,`changed_at`);
+
+--
 -- Indexes for table `password_reset_tokens`
 --
 ALTER TABLE `password_reset_tokens`
@@ -443,8 +458,7 @@ ALTER TABLE `services`
 --
 ALTER TABLE `service_archives`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `service_archives_service_id_created_at_index` (`service_id`,`created_at`),
-  ADD KEY `service_archives_created_at_index` (`created_at`);
+  ADD KEY `service_archives_service_id_foreign` (`service_id`);
 
 --
 -- Indexes for table `sessions`
@@ -470,7 +484,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `closure_periods`
 --
 ALTER TABLE `closure_periods`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `failed_jobs`
@@ -488,35 +502,47 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+
+--
+-- AUTO_INCREMENT for table `password_histories`
+--
+ALTER TABLE `password_histories`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `reservations`
 --
 ALTER TABLE `reservations`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `services`
 --
 ALTER TABLE `services`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `service_archives`
 --
 ALTER TABLE `service_archives`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `password_histories`
+--
+ALTER TABLE `password_histories`
+  ADD CONSTRAINT `password_histories_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `reservations`

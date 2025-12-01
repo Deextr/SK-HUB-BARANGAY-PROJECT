@@ -59,12 +59,27 @@ class UserAccountController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255|regex:/^[a-zA-Z\s\-\'\.]+$/',
+            'last_name' => 'required|string|max:255|regex:/^[a-zA-Z\s\-\'\.]+$/',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6|confirmed',
+            'password' => 'required|min:8|confirmed',
             'id_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ], [
+            'first_name.regex' => 'First name can only contain letters, spaces, hyphens, apostrophes, and periods.',
+            'last_name.regex' => 'Last name can only contain letters, spaces, hyphens, apostrophes, and periods.',
+            'password.min' => 'Password must be at least 8 characters long.',
         ]);
+
+        // Check for duplicate first_name + last_name combination
+        $duplicateName = User::where('first_name', $request->first_name)
+            ->where('last_name', $request->last_name)
+            ->exists();
+
+        if ($duplicateName) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['name' => 'A resident with this first and last name combination already exists.']);
+        }
 
         // Handle file upload
         if ($request->hasFile('id_image')) {
@@ -358,15 +373,30 @@ class UserAccountController extends Controller
 
         // Validate resubmitted data
         $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255|regex:/^[a-zA-Z\s\-\'\.]+$/',
+            'last_name' => 'required|string|max:255|regex:/^[a-zA-Z\s\-\'\.]+$/',
             'birth_month' => 'required|numeric|between:1,12',
             'birth_day' => 'required|numeric|between:1,31',
             'birth_year' => 'required|numeric|min:1900|max:' . date('Y'),
             'sex' => 'required|in:Male,Female',
             'is_pwd' => 'nullable|boolean',
             'id_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ], [
+            'first_name.regex' => 'First name can only contain letters, spaces, hyphens, apostrophes, and periods.',
+            'last_name.regex' => 'Last name can only contain letters, spaces, hyphens, apostrophes, and periods.',
         ]);
+
+        // Check for duplicate first_name + last_name combination (excluding current user)
+        $duplicateName = User::where('first_name', $request->first_name)
+            ->where('last_name', $request->last_name)
+            ->where('id', '!=', $user->id)
+            ->exists();
+
+        if ($duplicateName) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['name' => 'A resident with this first and last name already exists.']);
+        }
 
         // Handle optional file re-upload
         if ($request->hasFile('id_image')) {

@@ -209,7 +209,8 @@
                 @csrf
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Service Name <span class="text-red-500">*</span></label>
-                    <input type="text" name="name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500" placeholder="Enter service name" required />
+                    <input type="text" name="name" maxlength="50" pattern="^[a-zA-Z0-9\s\-]+$" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500" placeholder="Enter service name" required />
+                    <p class="text-xs text-gray-500 mt-1">Maximum 50 characters. Only letters, numbers, spaces, and hyphens allowed.</p>
                 </div>
 
                 <div>
@@ -273,7 +274,8 @@
                 @method('PUT')
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Service Name <span class="text-red-500">*</span></label>
-                    <input type="text" name="name" id="edit_name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500" placeholder="Enter service name" required />
+                    <input type="text" name="name" id="edit_name" maxlength="50" pattern="^[a-zA-Z0-9\s\-]+$" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500" placeholder="Enter service name" required />
+                    <p class="text-xs text-gray-500 mt-1">Maximum 50 characters. Only letters, numbers, spaces, and hyphens allowed.</p>
                 </div>
 
                 <div>

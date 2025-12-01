@@ -287,4 +287,48 @@ class User extends Authenticatable
             'archived_at' => null
         ]);
     }
+
+    /**
+     * Get password history for this user
+     */
+    public function passwordHistories()
+    {
+        return $this->hasMany(PasswordHistory::class);
+    }
+
+    /**
+     * Check if password has been used before
+     */
+    public function hasUsedPassword(string $plainPassword): bool
+    {
+        // Get all previous password hashes for this user
+        $previousPasswords = $this->passwordHistories()
+            ->orderBy('changed_at', 'desc')
+            ->pluck('password_hash')
+            ->toArray();
+
+        // Check if the new password matches any previous password
+        foreach ($previousPasswords as $hash) {
+            if (\Illuminate\Support\Facades\Hash::check($plainPassword, $hash)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Record current password in history before updating
+     */
+    public function recordPasswordHistory(): void
+    {
+        // Only record if user already has a password (not on initial creation)
+        if ($this->password) {
+            PasswordHistory::create([
+                'user_id' => $this->id,
+                'password_hash' => $this->password,
+                'changed_at' => now(),
+            ]);
+        }
+    }
 }

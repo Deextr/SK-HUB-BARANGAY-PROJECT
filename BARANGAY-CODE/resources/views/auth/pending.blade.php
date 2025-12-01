@@ -61,7 +61,7 @@
                     Back to Login
                 </a>
                 
-                <a href="{{ route('register.form') }}" 
+                <a href="{{ route('register.reset') }}" 
                    class="w-full bg-gray-200 text-gray-700 py-2 rounded-full font-bold hover:bg-gray-300 transition text-center block">
                     Register Another Account
                 </a>

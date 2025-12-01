@@ -55,9 +55,12 @@ class ServiceController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', Rule::unique('services', 'name')],
+            'name' => ['required', 'string', 'max:50', 'regex:/^[a-zA-Z0-9\s\-]+$/', Rule::unique('services', 'name')],
             'description' => ['nullable', 'string', 'max:2000'],
             'capacity_units' => ['required', 'integer', 'min:1'],
+        ], [
+            'name.max' => 'Service name cannot exceed 50 characters.',
+            'name.regex' => 'Service name can only contain letters, numbers, spaces, and hyphens. Special characters are not allowed.',
         ]);
 
         $service = Service::create([
@@ -73,10 +76,12 @@ class ServiceController extends Controller
     public function update(Request $request, Service $service)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', Rule::unique('services', 'name')->ignore($service->id)],
+            'name' => ['required', 'string', 'max:50', 'regex:/^[a-zA-Z0-9\s\-]+$/', Rule::unique('services', 'name')->ignore($service->id)],
             'description' => ['nullable', 'string', 'max:2000'],
             'capacity_units' => ['required', 'integer', 'min:' . $service->capacity_units],
         ], [
+            'name.max' => 'Service name cannot exceed 50 characters.',
+            'name.regex' => 'Service name can only contain letters, numbers, spaces, and hyphens. Special characters are not allowed.',
             'capacity_units.min' => 'Capacity units cannot be decreased. Current capacity is ' . $service->capacity_units . ' units. To reduce capacity, use the Archive Units feature.',
         ]);
 
