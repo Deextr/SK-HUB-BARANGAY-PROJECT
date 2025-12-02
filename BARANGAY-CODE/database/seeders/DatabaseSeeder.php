@@ -13,13 +13,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Seed admin account
         $this->call(AdminSeeder::class);
-
-        // Seed resident accounts
+        $this->call(ClosurePeriodSeeder::class);
         $this->call(ResidentSeeder::class);
+        $this->call(ServiceSeeder::class);
+        $this->call(UserSeeder::class);
+        $this->call(ReservationSeeder::class);
 
-        // Uncomment to create test users
-        // User::factory(10)->create();
     }
 }

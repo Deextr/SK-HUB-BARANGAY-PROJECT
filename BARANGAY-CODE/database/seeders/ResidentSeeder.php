@@ -14,7 +14,7 @@ class ResidentSeeder extends Seeder
      */
     public function run(): void
     {
-        // Men residents (10 total)
+            //Men residents (10 total)
         $men = [
             // Specified names
             [
@@ -196,3 +196,4 @@ class ResidentSeeder extends Seeder
         $this->command->info('Resident seeder completed! Created 20 resident accounts.');
     }
 }
+ 
