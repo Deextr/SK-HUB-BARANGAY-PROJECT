@@ -322,6 +322,8 @@
     </div>
 </div>
 
+{{-- Audio notification service is now loaded globally in admin_panel layout --}}
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Filter Toggle
@@ -651,56 +653,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- Include the Cancel Reservation Modal -->
 @include('admin.partials.cancel_reservation_modal')
 
-<!-- 5-Minute Warning Modal -->
-<div id="warningModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-lg shadow-2xl w-full max-w-md">
-        <!-- Modal Header -->
-        <div class="px-6 py-4 border-b-2 border-amber-500 bg-amber-50">
-            <div class="flex items-center justify-between">
-                <h3 class="text-lg font-bold text-amber-900">Reservation Ending Soon</h3>
-                <button id="warningClose" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
-            </div>
-        </div>
-
-        <!-- Modal Body -->
-        <div class="p-6 space-y-4">
-            <div class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded">
-                <p class="text-amber-900 font-semibold text-center">
-                    <span id="warningTimeRemaining" class="text-2xl font-bold text-amber-700">5</span> minutes remaining
-                </p>
-            </div>
-
-            <div class="space-y-3 text-sm">
-                <div class="flex justify-between items-start">
-                    <span class="text-gray-600 font-medium">Resident:</span>
-                    <span id="warningResidentName" class="text-gray-900 font-semibold text-right">—</span>
-                </div>
-                <div class="flex justify-between items-start">
-                    <span class="text-gray-600 font-medium">Service:</span>
-                    <span id="warningService" class="text-gray-900 font-semibold text-right">—</span>
-                </div>
-                <div class="flex justify-between items-start">
-                    <span class="text-gray-600 font-medium">Scheduled End Time:</span>
-                    <span id="warningTime" class="text-gray-900 font-semibold text-right">—</span>
-                </div>
-            </div>
-
-            <p class="text-sm text-gray-600 text-center italic">
-                Please ensure the resident completes their reservation on time.
-            </p>
-        </div>
-
-        <!-- Modal Footer -->
-        <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-lg flex gap-3">
-            <button id="warningDismiss" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium transition-colors">
-                Dismiss
-            </button>
-            <button id="warningViewDetails" class="flex-1 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-medium transition-colors">
-                View Details
-            </button>
-        </div>
-    </div>
-</div>
+<!-- Note: 5-Minute Warning Modal is now in the global admin_panel layout for all admin pages -->
 
 <script>
 // Auto-refresh for real-time updates (only on Today's tab)
@@ -838,84 +791,50 @@ document.addEventListener('DOMContentLoaded', function() {
         return true;
     });
     
-    // ===== 5-MINUTE WARNING NOTIFICATION SYSTEM =====
-    let warningShown = {}; // Track which reservations have shown warnings
-    let currentWarningReservationId = null; // Store current warning reservation ID
-    const warningModal = document.getElementById('warningModal');
-    const warningClose = document.getElementById('warningClose');
-    const warningDismiss = document.getElementById('warningDismiss');
-    const warningViewDetails = document.getElementById('warningViewDetails');
-    
-    // Close warning modal
-    function hideWarningModal() {
-        warningModal.classList.add('hidden');
-        warningModal.classList.remove('flex');
-    }
-    
-    warningClose.addEventListener('click', hideWarningModal);
-    warningDismiss.addEventListener('click', hideWarningModal);
-    warningModal.addEventListener('click', (e) => {
-        if (e.target === warningModal) hideWarningModal();
-    });
-    
-    // View Details button - find and click the corresponding view button
-    warningViewDetails.addEventListener('click', function() {
-        if (currentWarningReservationId) {
-            // Find the view button for this reservation
-            const viewBtn = document.querySelector(`button.btn-view[data-id="${currentWarningReservationId}"]`);
-            if (viewBtn) {
-                viewBtn.click();
-                hideWarningModal();
-            }
+    // Note: 5-Minute Warning System is now handled globally in admin_panel layout
+});
+
+// Auto-open reservation modal if coming from warning modal
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        const pendingReservationId = localStorage.getItem('pendingReservationViewId');
+        if (!pendingReservationId) {
+            return;
         }
-    });
-    
-    // Fetch today's reservations and check for 5-minute warnings
-    async function checkReservationWarnings() {
+        
+        const openPendingReservation = () => {
+            const targetBtn = document.querySelector(`.btn-view[data-id="${pendingReservationId}"]`);
+            if (targetBtn) {
+                targetBtn.click();
+                localStorage.removeItem('pendingReservationViewId');
+                return true;
+            }
+            return false;
+        };
+        
+        if (openPendingReservation()) {
+            return;
+        }
+        
+        // Retry a few times in case the table is still rendering
+        let attempts = 0;
+        const maxAttempts = 10;
+        const retryInterval = setInterval(() => {
+            attempts += 1;
+            if (openPendingReservation() || attempts >= maxAttempts) {
+                clearInterval(retryInterval);
+                if (attempts >= maxAttempts) {
+                    // Clean up storage even if we couldn't open it to avoid stale state
+                    localStorage.removeItem('pendingReservationViewId');
+                }
+            }
+        }, 400);
+    } catch (error) {
+        console.warn('[Reservation Page] Unable to open pending reservation view:', error);
         try {
-            const response = await fetch('{{ url("admin/reservations/today-warnings") }}');
-            const data = await response.json();
-            
-            if (data.reservations && data.reservations.length > 0) {
-                data.reservations.forEach(reservation => {
-                    // Only show warning once per reservation
-                    if (!warningShown[reservation.id]) {
-                        // Calculate time remaining
-                        const now = new Date();
-                        const endTime = new Date();
-                        const [hours, minutes] = reservation.end_time.split(':').map(Number);
-                        endTime.setHours(hours, minutes, 0);
-                        
-                        const timeRemaining = Math.floor((endTime - now) / 1000 / 60); // minutes
-                        
-                        // Show warning if 5 minutes or less remaining
-                        if (timeRemaining > 0 && timeRemaining <= 5) {
-                            warningShown[reservation.id] = true;
-                            currentWarningReservationId = reservation.id; // Store reservation ID
-                            
-                            // Update modal content
-                            document.getElementById('warningResidentName').textContent = reservation.resident_name;
-                            document.getElementById('warningService').textContent = reservation.service_name;
-                            document.getElementById('warningTime').textContent = reservation.end_time;
-                            document.getElementById('warningTimeRemaining').textContent = timeRemaining;
-                            
-                            // Show modal
-                            warningModal.classList.remove('hidden');
-                            warningModal.classList.add('flex');
-                        }
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Error checking reservation warnings:', error);
-        }
+            localStorage.removeItem('pendingReservationViewId');
+        } catch (_) {}
     }
-    
-    // Check for warnings every 30 seconds
-    setInterval(checkReservationWarnings, 30000);
-    
-    // Initial check on page load
-    checkReservationWarnings();
 });
 </script>
 @endsection

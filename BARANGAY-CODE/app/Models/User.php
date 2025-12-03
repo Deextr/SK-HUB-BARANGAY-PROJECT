@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
+use App\Notifications\ResetPasswordNotification;
 
 class User extends Authenticatable
 {
@@ -330,5 +331,16 @@ class User extends Authenticatable
                 'changed_at' => now(),
             ]);
         }
+    }
+
+    /**
+     * Send a password reset notification to the user.
+     * This customizes the default Laravel password reset email.
+     *
+     * @param  string  $token
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 }
