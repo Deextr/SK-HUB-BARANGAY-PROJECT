@@ -444,15 +444,21 @@
             });
         });
         
-        // Inactive Users Chart - Yellow Color
+        // Inactive Users Chart - Gradient Color
         const inactiveUsersCtx = document.getElementById('inactiveUsersChart').getContext('2d');
+        
+        // Create gradient for inactive users chart
+        const inactiveGradient = inactiveUsersCtx.createLinearGradient(0, 0, 0, 400);
+        inactiveGradient.addColorStop(0, 'rgba(251, 191, 36, 0.9)');    // Yellow
+        inactiveGradient.addColorStop(1, 'rgba(249, 115, 22, 0.7)');    // Orange
+        
         const inactiveUsersChart = new Chart(inactiveUsersCtx, {
             type: 'bar',
             data: {
                 labels: {!! json_encode($inactiveUsersTrend['labels']) !!},
                 datasets: {!! json_encode($inactiveUsersTrend['datasets']) !!}.map(dataset => ({
                     ...dataset,
-                    backgroundColor: 'rgba(251, 191, 36, 0.8)',
+                    backgroundColor: inactiveGradient,
                     borderColor: '#FBBF24',
                     borderWidth: 1,
                     borderRadius: 8,
@@ -490,10 +496,30 @@
             }
         });
         
-        // Popular Services Chart
+        // Popular Services Chart - Gradient Colors
         const popularServicesCtx = document.getElementById('popularServicesChart').getContext('2d');
-        // Color order: Yellow (1st), Blue (2nd), Green (3rd), then others
-        const colors = ['#FBBF24', '#3B82F6', '#10B981', '#8B5CF6', '#EC4899', '#F59E0B', '#6366F1', '#EF4444', '#F97316', '#06B6D4'];
+        
+        // Create gradients for each bar (horizontal gradient for horizontal bars)
+        const createGradient = (ctx, color1, color2) => {
+            const gradient = ctx.createLinearGradient(0, 0, 400, 0);
+            gradient.addColorStop(0, color1);
+            gradient.addColorStop(1, color2);
+            return gradient;
+        };
+        
+        // Gradient color pairs: [start color, end color]
+        const gradientColors = [
+            ['rgba(251, 191, 36, 0.9)', 'rgba(245, 158, 11, 0.9)'],   // Yellow to Amber
+            ['rgba(59, 130, 246, 0.9)', 'rgba(37, 99, 235, 0.9)'],    // Blue
+            ['rgba(16, 185, 129, 0.9)', 'rgba(5, 150, 105, 0.9)'],    // Green
+            ['rgba(139, 92, 246, 0.9)', 'rgba(124, 58, 237, 0.9)'],   // Purple
+            ['rgba(236, 72, 153, 0.9)', 'rgba(219, 39, 119, 0.9)'],   // Pink
+            ['rgba(245, 158, 11, 0.9)', 'rgba(217, 119, 6, 0.9)'],    // Orange
+            ['rgba(99, 102, 241, 0.9)', 'rgba(79, 70, 229, 0.9)'],    // Indigo
+            ['rgba(239, 68, 68, 0.9)', 'rgba(220, 38, 38, 0.9)'],     // Red
+            ['rgba(249, 115, 22, 0.9)', 'rgba(234, 88, 12, 0.9)'],    // Deep Orange
+            ['rgba(6, 182, 212, 0.9)', 'rgba(8, 145, 178, 0.9)']      // Cyan
+        ];
         
         const popularServicesChart = new Chart(popularServicesCtx, {
             type: 'bar',
@@ -501,7 +527,10 @@
                 labels: {!! json_encode($popularServices['labels']) !!},
                 datasets: {!! json_encode($popularServices['datasets']) !!}.map((dataset, index) => ({
                     ...dataset,
-                    backgroundColor: {!! json_encode($popularServices['labels']) !!}.map((_, i) => colors[i % colors.length]),
+                    backgroundColor: {!! json_encode($popularServices['labels']) !!}.map((_, i) => {
+                        const colorPair = gradientColors[i % gradientColors.length];
+                        return createGradient(popularServicesCtx, colorPair[0], colorPair[1]);
+                    }),
                     borderRadius: 8,
                     borderSkipped: false
                 }))

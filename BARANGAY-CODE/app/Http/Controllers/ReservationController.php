@@ -899,6 +899,7 @@ class ReservationController extends Controller
             ->select(
                 'reservations.id',
                 'reservations.end_time',
+                'reservations.status',
                 'users.first_name',
                 'users.last_name',
                 'services.name as service_name'
@@ -910,6 +911,7 @@ class ReservationController extends Controller
                 return [
                     'id' => $reservation->id,
                     'end_time' => substr($reservation->end_time, 0, 5), // HH:MM format
+                    'status' => $reservation->status,
                     'resident_name' => trim($reservation->first_name . ' ' . $reservation->last_name),
                     'service_name' => $reservation->service_name,
                 ];

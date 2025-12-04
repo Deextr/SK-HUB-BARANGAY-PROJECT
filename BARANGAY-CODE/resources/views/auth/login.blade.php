@@ -83,12 +83,19 @@
                     </button>
                 </div>
 
-                <!-- Register link -->
-                <div class="mt-4 text-center">
-                    <span class="text-gray-600">Don't have an account?</span>
-                    <a href="{{ route('register.nda') }}" class="text-yellow-600 font-semibold hover:underline">
-                        Register
-                    </a>
+                <!-- Links -->
+                <div class="mt-4 text-center space-y-2">
+                    <div>
+                        <a href="{{ route('password.request') }}" class="text-yellow-600 font-semibold hover:underline text-sm">
+                            Forgot Password?
+                        </a>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Don't have an account?</span>
+                        <a href="{{ route('register.nda') }}" class="text-yellow-600 font-semibold hover:underline">
+                            Register
+                        </a>
+                    </div>
                 </div>
             </form>
         </div>
