@@ -115,7 +115,7 @@
                         <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
                             <div class="flex-1">
                                 <div class="flex items-center gap-3 mb-2">
-                                    <span class="text-lg font-semibold text-gray-900">{{ $res->service->name }}</span>
+                                    <span class="text-lg font-semibold text-gray-900">{{ $res->service?->name ?? 'Archived Service' }}</span>
                                     @if($res->status === 'cancelled')
                                         <span class="text-xs font-medium text-red-600">Cancelled</span>
                                     @elseif($res->status === 'completed')
@@ -281,8 +281,8 @@ let reservationsData = {!! json_encode($items->map(function($res) {
         'reservation_date' => $res->reservation_date->format('M d, Y'),
         'start_time' => \Carbon\Carbon::parse($res->start_time)->format('g:i A'),
         'end_time' => \Carbon\Carbon::parse($res->end_time)->format('g:i A'),
-        'service_name' => $res->service->name,
-        'service_description' => $res->service->description ?? 'N/A',
+        'service_name' => $res->service?->name ?? 'Archived Service',
+        'service_description' => $res->service?->description ?? 'N/A',
         'units_reserved' => $res->units_reserved,
         'cancellation_reason' => $res->cancellation_reason,
         'suspension_applied' => $res->suspension_applied,

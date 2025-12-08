@@ -81,7 +81,7 @@ class ReservationController extends Controller
                       ->orWhereDate('reservation_date', $term)
                       ->orWhere('start_time', 'like', "%$term%")
                       ->orWhere('end_time', 'like', "%$term%")
-                      ->orWhereHas('service', fn($sq) => $sq->where('name', 'like', "%$term%"));
+                      ->orWhereHas('service', fn($sq) => $sq->withTrashed()->where('name', 'like', "%$term%"));
                 });
             })
             ->when($request->filled('date'), fn($q) => $q->whereDate('reservation_date', $request->date))
