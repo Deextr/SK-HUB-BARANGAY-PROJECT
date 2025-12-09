@@ -126,10 +126,22 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                 </svg>
                             </button>
+                            @php
+                                $canArchive = true;
+                                $archiveTitle = 'Archive Closure Period';
+                                if ($p->status === 'active') {
+                                    $today = now()->startOfDay();
+                                    $endDate = $p->end_date->startOfDay();
+                                    if ($endDate->isFuture() || $endDate->isToday()) {
+                                        $canArchive = false;
+                                        $archiveTitle = 'Active closure periods can only be archived after the end date has passed.';
+                                    }
+                                }
+                            @endphp
                             <form method="POST" action="{{ route('admin.closure_periods.destroy', $p) }}" onsubmit="return confirm('Archive this period?')" class="inline">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" title="Archive Closure Period" class="px-2 py-2 text-red-600 hover:text-red-800 font-medium" {{ $p->status==='active' ? 'disabled' : '' }}>
+                                <button type="submit" title="{{ $archiveTitle }}" class="px-2 py-2 text-red-600 hover:text-red-800 font-medium {{ !$canArchive ? 'opacity-50 cursor-not-allowed' : '' }}" {{ !$canArchive ? 'disabled' : '' }}>
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
                                     </svg>
@@ -186,8 +198,11 @@
                 <input type="date" name="end_date" class="border rounded px-3 py-2 w-full" min="{{ date('Y-m-d') }}" required />
             </div>
             <div class="md:col-span-2">
-                <label class="block text-sm text-gray-600 mb-1">Reason</label>
-                <input type="text" name="reason" class="border rounded px-3 py-2 w-full" placeholder="e.g. Holiday" />
+                <label class="block text-sm text-gray-600 mb-1">Reason <span class="text-gray-400 text-xs">(max 200 characters)</span></label>
+                <input type="text" name="reason" id="create_reason" maxlength="200" class="border rounded px-3 py-2 w-full" placeholder="e.g. Holiday" />
+                <div class="text-xs text-gray-500 mt-1">
+                    <span id="create_reason_count">0</span>/200 characters
+                </div>
             </div>
             <div>
                 <label class="block text-sm text-gray-600 mb-1">Status</label>
@@ -229,8 +244,11 @@
                 <input type="date" name="end_date" id="edit_end_date" class="border rounded px-3 py-2 w-full" min="{{ date('Y-m-d') }}" required />
             </div>
             <div class="md:col-span-2">
-                <label class="block text-sm text-gray-600 mb-1">Reason</label>
-                <input type="text" name="reason" id="edit_reason" class="border rounded px-3 py-2 w-full" />
+                <label class="block text-sm text-gray-600 mb-1">Reason <span class="text-gray-400 text-xs">(max 200 characters)</span></label>
+                <input type="text" name="reason" id="edit_reason" maxlength="200" class="border rounded px-3 py-2 w-full" />
+                <div class="text-xs text-gray-500 mt-1">
+                    <span id="edit_reason_count">0</span>/200 characters
+                </div>
             </div>
             <div>
                 <label class="block text-sm text-gray-600 mb-1">Status</label>
@@ -283,6 +301,48 @@ document.addEventListener('DOMContentLoaded', function() {
     btnCloseEdit?.addEventListener('click', () => hide(editModal));
     btnCancelEdit?.addEventListener('click', () => hide(editModal));
 
+    // Character counter for reason field (Create)
+    const createReason = document.getElementById('create_reason');
+    const createReasonCount = document.getElementById('create_reason_count');
+    if (createReason && createReasonCount) {
+        createReason.addEventListener('input', function() {
+            const length = this.value.length;
+            createReasonCount.textContent = length;
+            if (length > 200) {
+                createReasonCount.classList.add('text-red-600', 'font-semibold');
+                createReasonCount.classList.remove('text-gray-500');
+            } else if (length > 180) {
+                createReasonCount.classList.add('text-amber-600');
+                createReasonCount.classList.remove('text-red-600', 'font-semibold', 'text-gray-500');
+            } else {
+                createReasonCount.classList.remove('text-red-600', 'font-semibold', 'text-amber-600');
+                createReasonCount.classList.add('text-gray-500');
+            }
+        });
+        // Initialize counter
+        createReasonCount.textContent = createReason.value.length;
+    }
+
+    // Character counter for reason field (Edit)
+    const editReason = document.getElementById('edit_reason');
+    const editReasonCount = document.getElementById('edit_reason_count');
+    if (editReason && editReasonCount) {
+        editReason.addEventListener('input', function() {
+            const length = this.value.length;
+            editReasonCount.textContent = length;
+            if (length > 200) {
+                editReasonCount.classList.add('text-red-600', 'font-semibold');
+                editReasonCount.classList.remove('text-gray-500');
+            } else if (length > 180) {
+                editReasonCount.classList.add('text-amber-600');
+                editReasonCount.classList.remove('text-red-600', 'font-semibold', 'text-gray-500');
+            } else {
+                editReasonCount.classList.remove('text-red-600', 'font-semibold', 'text-amber-600');
+                editReasonCount.classList.add('text-gray-500');
+            }
+        });
+    }
+
     // Validate date inputs
     const createStartDate = createModal?.querySelector('input[name="start_date"]');
     const createEndDate = createModal?.querySelector('input[name="end_date"]');
@@ -327,6 +387,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         const reason = (createForm.querySelector('input[name="reason"]').value || '').trim();
+        
+        // Validate reason length
+        if (reason.length > 200) {
+            alert('Reason cannot exceed 200 characters. Please shorten your reason.');
+            e.preventDefault();
+            return;
+        }
+        
         const status = createForm.querySelector('select[name="status"]').value;
         const cancelNote = status === 'active' ? '\n\n⚠️ All reservations within this date range will be automatically cancelled!' : '';
         const msg = `Add closure period?\n\nDates: ${startDate} to ${endDate}\nReason: ${reason || '—'}\nStatus: ${status.toUpperCase()}${cancelNote}`;
@@ -359,6 +427,18 @@ document.addEventListener('DOMContentLoaded', function() {
             elEnd.value = endDate;
             elReason.value = reason;
             elStatus.value = status;
+
+            // Update character counter for edit form
+            if (editReasonCount) {
+                editReasonCount.textContent = reason.length;
+                if (reason.length > 180) {
+                    editReasonCount.classList.add('text-amber-600');
+                    editReasonCount.classList.remove('text-gray-500');
+                } else {
+                    editReasonCount.classList.remove('text-amber-600');
+                    editReasonCount.classList.add('text-gray-500');
+                }
+            }
 
             const locked = status === 'active';
             elStart.disabled = locked;
@@ -419,6 +499,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         const reason = (document.getElementById('edit_reason').value || '').trim();
+        
+        // Validate reason length
+        if (reason.length > 200) {
+            alert('Reason cannot exceed 200 characters. Please shorten your reason.');
+            e.preventDefault();
+            return;
+        }
+        
         const status = document.getElementById('edit_status').value;
         const cancelNote = (oldStatus !== 'active' && status === 'active') ? '\n\n⚠️ All reservations within this date range will be automatically cancelled!' : '';
         const msg = `Save changes to closure period?\n\nDates: ${startDate} to ${endDate}\nReason: ${reason || '—'}\nStatus: ${status.toUpperCase()}${cancelNote}`;

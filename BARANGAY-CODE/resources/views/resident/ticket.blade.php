@@ -8,7 +8,7 @@
     <div class="border rounded p-4">
         <div class="mb-2"><span class="font-semibold">Reference:</span> {{ $reservation->reference_no }}</div>
         <div class="mb-2"><span class="font-semibold">Reservation ID:</span> {{ $reservation->id }}</div>
-        <div class="mb-2"><span class="font-semibold">Service:</span> {{ $reservation->service->name }}</div>
+        <div class="mb-2"><span class="font-semibold">Service:</span> {{ $reservation->service?->name ?? 'Archived Service' }}</div>
         <div class="mb-2"><span class="font-semibold">Date:</span> {{ $reservation->reservation_date->format('M j, Y') }}</div>
         <div class="mb-2"><span class="font-semibold">Time:</span> {{ \Carbon\Carbon::parse($reservation->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($reservation->end_time)->format('g:i A') }}</div>
         <div class="mb-2"><span class="font-semibold">Status:</span> {{ ucfirst($reservation->status) }}</div>
