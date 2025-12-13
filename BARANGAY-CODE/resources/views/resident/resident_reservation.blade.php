@@ -416,9 +416,11 @@ function getCancelledDetails(reservation) {
                     <span class="text-sm text-gray-700">Cancelled By:</span>
                     <span class="text-sm font-medium text-gray-900">${reservation.cancelled_by_admin ? 'Administrator' : (reservation.cancelled_by_name || 'You')}</span>
                 </div>
-                <div class="flex justify-between py-2 border-b border-red-100">
-                    <span class="text-sm text-gray-700">Reason:</span>
-                    <span class="text-sm font-medium text-gray-900">${reservation.cancellation_reason || 'No reason provided'}</span>
+                <div class="py-2 border-b border-red-100">
+                    <span class="block text-sm text-gray-700 mb-1">Reason:</span>
+                    <p class="text-sm font-medium text-gray-900 whitespace-pre-wrap break-words leading-relaxed">
+                        ${reservation.cancellation_reason || 'No reason provided'}
+                    </p>
                 </div>
                 <div class="flex justify-between py-2 border-b border-red-100">
                     <span class="text-sm text-gray-700">Cancelled On:</span>

@@ -173,7 +173,7 @@
                                 </div>
                             </div>
                             @if($upcoming->status === 'pending')
-                                <span class="inline-block mt-2 text-xs font-semibold bg-amber-100 text-amber-700 px-2 py-1 rounded-full">⏳ Waiting for Approval</span>
+                                <span class="inline-block mt-2 text-xs font-semibold bg-amber-100 text-amber-700 px-2 py-1 rounded-full">Pending</span>
                             @else
                                 <span class="inline-block mt-2 text-xs font-semibold bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ {{ ucfirst($upcoming->status) }}</span>
                             @endif
@@ -181,9 +181,6 @@
                     </div>
 
                     <div class="flex gap-2">
-                        <a href="{{ route('resident.reservation.ticket', $upcoming->id) }}" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white text-center py-2.5 rounded-lg font-semibold text-sm transition-colors">
-                            <i class="fas fa-ticket-alt mr-1"></i>View Ticket
-                        </a>
                         @php
                             $minutesSinceCreation = $upcoming->created_at->diffInMinutes(now());
                             $canCancel = $minutesSinceCreation <= 10 && !in_array($upcoming->status, ['cancelled','completed']);
@@ -197,6 +194,9 @@
                                 </button>
                             </form>
                         @endif
+                        <a href="{{ route('resident.reservation.ticket', $upcoming->id) }}" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white text-center py-2.5 rounded-lg font-semibold text-sm transition-colors">
+                            <i class="fas fa-ticket-alt mr-1"></i>View Ticket
+                        </a>
                     </div>
                 </div>
             </div>

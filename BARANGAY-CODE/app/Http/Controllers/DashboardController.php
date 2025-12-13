@@ -13,8 +13,8 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        // Default to 'last_30_days' if no time range is provided
-        $timeRange = $request->input('time_range', 'last_30_days');
+        // Default to 'today' if no time range is provided
+        $timeRange = $request->input('time_range', 'today');
         $customStartDate = $request->input('start_date');
         $customEndDate = $request->input('end_date');
         
@@ -73,11 +73,11 @@ class DashboardController extends Controller
                     $startDate = Carbon::parse($customStartDate)->startOfDay();
                     $endDate = Carbon::parse($customEndDate)->endOfDay();
                 } else {
-                    $startDate = Carbon::now()->subDays(29)->startOfDay();
+                    $startDate = Carbon::now()->startOfDay();
                 }
                 break;
             default:
-                $startDate = Carbon::now()->subDays(29)->startOfDay();
+                $startDate = Carbon::now()->startOfDay();
         }
         
         return [

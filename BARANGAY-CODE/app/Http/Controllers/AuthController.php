@@ -51,9 +51,9 @@ class AuthController extends Controller
         }
 
         $request->validate([
-            'first_name' => 'required|string|max:255|regex:/^[a-zA-Z\s\-\'\.]+$/',
-            'last_name' => 'required|string|max:255|regex:/^[a-zA-Z\s\-\'\.]+$/',
-            'email' => 'required|email|unique:users,email',
+            'first_name' => 'required|string|max:50|regex:/^[a-zA-Z\s\-\'\.]+$/',
+            'last_name' => 'required|string|max:50|regex:/^[a-zA-Z\s\-\'\.]+$/',
+            'email' => 'required|email|max:100|unique:users,email',
             'password' => 'required|min:8|confirmed',
             'birth_date' => 'required|date|before:today|after:' . date('Y-m-d', strtotime('-150 years')),
             'sex' => 'required|in:Male,Female',

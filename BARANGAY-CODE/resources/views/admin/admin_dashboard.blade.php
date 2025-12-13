@@ -180,7 +180,7 @@
         
         <!-- Filter Buttons -->
         <div class="flex flex-wrap gap-2 mb-5">
-            <button type="button" class="appointment-filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-white text-gray-700 border border-gray-200 hover:border-yellow-300 hover:bg-yellow-50" data-filter="all">
+            <button type="button" class="appointment-filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-sm" data-filter="all">
                 All
             </button>
             <button type="button" class="appointment-filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-white text-gray-700 border border-gray-200 hover:border-yellow-300 hover:bg-yellow-50" data-filter="completed">
