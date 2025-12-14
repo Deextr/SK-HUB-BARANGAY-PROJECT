@@ -25,8 +25,13 @@ class DatabaseSeeder extends Seeder
         // Seed additional 100 resident accounts (30 pending, 40 approved, 30 rejected)
         $this->call(ResidentAccountsSeeder::class);
 
+        // Seed archived users (25 archived accounts)
+        $this->call(ArchivedUsersSeeder::class);
+
         // Seed reservations for 2025 (1000 records: 600 completed, 250 cancelled, 150 pending)
         $this->call(ReservationSeeder::class);
+        // Seed closure periods
+        $this->call(ClosurePeriodSeeder::class);
 
         // Uncomment to create test users
         // User::factory(10)->create();
