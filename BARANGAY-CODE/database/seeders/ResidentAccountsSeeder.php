@@ -101,7 +101,7 @@ class ResidentAccountsSeeder extends Seeder
                 'is_archived' => false,
                 'archive_reason' => null,
                 'archived_at' => null,
-                'id_image_path' => null,
+                'id_image_path' => 'images/id/test_id.jpg',
                 'rejection_reason' => $rejectionReason,
                 'approved_at' => $approvedAt,
                 'rejected_at' => $rejectedAt,

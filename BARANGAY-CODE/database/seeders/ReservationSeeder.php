@@ -28,11 +28,16 @@ class ReservationSeeder extends Seeder
         }
 
         // Create future pending reservations
+         Reservation::factory()->count(20)->create([
+            'reservation_date' => Carbon::today(),
+        ]);
         Reservation::factory()->count(30)->future()->pending()->create();
         Reservation::factory()->count(10)->future()->cancelled()->create();
 
         // Create past completed reservations (with time logs)
-        Reservation::factory()->count(1000)->past()->completed()->create();
+        Reservation::factory()->count(1000)->past()->create();
+        Reservation::factory()->count(15)->past()->cancelled()->create();
+
         // Create past cancelled reservations
         Reservation::factory()->count(15)->past()->cancelled()->create();
         // Create no-show reservations (cancelled with suspension)
@@ -45,6 +50,9 @@ class ReservationSeeder extends Seeder
         Reservation::factory()->count(3)->past()->cancelled()->withOtherReason('Others')->create();
 
         $this->command->info('Reservations seeded successfully!');
+        // TODAY reservations (VERY IMPORTANT)
+       
+
         
 
     }

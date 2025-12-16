@@ -18,8 +18,8 @@ class DatabaseSeeder extends Seeder
         // Seed services (must run before reservations)
         $this->call(ServiceSeeder::class);
         // Seed original 20 resident accounts (specific people)
-        //$this->call(ResidentSeeder::class);
-        $this->call(ServiceSeeder::class);
+        $this->call(ResidentSeeder::class);
+        
         $this->call(UserSeeder::class);
         // Seed additional 100 resident accounts (30 pending, 40 approved, 30 rejected)
         $this->call(ResidentAccountsSeeder::class);

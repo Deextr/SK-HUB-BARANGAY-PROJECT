@@ -15,10 +15,10 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // Create approved users
-        User::factory()->count(10)->approved()->female()->create();
-        User::factory()->count(10)->approved()->male()->create();
-        User::factory()->count(4)->approved()->female()->pwd()->create();
-        User::factory()->count(4)->approved()->male()->pwd()->create();
+        User::factory()->count(2)->approved()->female()->create();
+        User::factory()->count(2)->approved()->male()->create();
+        User::factory()->count(2)->approved()->female()->pwd()->create();
+        User::factory()->count(2)->approved()->male()->pwd()->create();
 
         // Create pending users
         User::factory()->count(3)->pending()->male()->create();

@@ -99,18 +99,28 @@
                     $reservationsCol = collect($reservationsItems);
                     $totalRecords = method_exists($reservationsData, 'total') ? $reservationsData->total() : $reservationsCol->count();
                     $pending = $reservationsCol->where('status', 'pending')->count();
-                    $confirmed = $reservationsCol->where('status', 'confirmed')->count();
                     $completed = $reservationsCol->where('status', 'completed')->count();
+                    $cancelled = $reservationsCol->where('status', 'cancelled')->count();
                 }
             @endphp
-            <div class="px-6 pb-2 py-2">
-                <div class="text-sm text-gray-700">
-                    <p>
-                    Summary: <strong>{{ $totalRecords ?? 0 }}</strong> 
-                    total — Pending: <strong class="text-grey-600">{{ $pending ?? 0 }}</strong>,
-                    Confirmed:  <strong class="text-grey-600">{{ $confirmed ?? 0 }}</strong>, 
-                    Completed:<strong class="text-grey-600"> {{ $completed ?? 0 }}</strong>
-                     </p>
+            <div class="px-6 py-3 bg-gray-50 border-t border-gray-200">
+                <div class="grid grid-cols-4 gap-4">
+                    <div>
+                        <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Total Reservations</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ $totalRecords ?? 0 }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-amber-600 uppercase tracking-wide font-semibold">Pending</p>
+                        <p class="text-2xl font-bold text-amber-600 mt-1">{{ $pending ?? 0 }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-red-600 uppercase tracking-wide font-semibold">Canelled</p>
+                        <p class="text-2xl font-bold text-red-600 mt-1">{{ $cancelled ?? 0 }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-green-600 uppercase tracking-wide font-semibold">Complete</p>
+                        <p class="text-2xl font-bold text-green-600 mt-1">{{ $completed ?? 0 }}</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -204,18 +214,32 @@
                 }
             @endphp
 
-            <div class="px-6 pb-2 py-2">
-                <div class="text-sm text-gray-700">
-                    <p>
-                        Summary:
-                        <strong>{{ $servicesCount ?? 0 }}</strong> services —
-                        Total Usage: <strong>{{ number_format($totalUsage ?? 0) }}</strong> —
-                        Unique Users: <strong>{{ number_format($totalUniqueUsers ?? 0) }}</strong> —
-                        Top Service: <strong>{{ $topServiceName ?? '—' }}</strong> (<strong>{{ $topServiceCount ?? 0 }}</strong>) —
-                        Avg Usage/service: <strong>{{ $avgUsage ?? 0 }}</strong>
-                    </p>
-                </div>
-            </div>
+            <div class="px-6 py-3 bg-gray-50 border-t border-gray-200">
+    <div class="grid grid-cols-5 gap-4">
+        <div>
+            <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Total Services</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ $servicesCount ?? 0 }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Total Usage</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ number_format($totalUsage ?? 0) }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Unique Users</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ number_format($totalUniqueUsers ?? 0) }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Top Service</p>
+            <p class="text-sm font-bold text-gray-900 mt-1">{{ $topServiceName ?? '—' }}</p>
+            <p class="text-xs text-gray-500">({{ $topServiceCount ?? 0 }} uses)</p>
+        </div>
+        <div>
+            <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Avg Usage / Service</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ $avgUsage ?? 0 }}</p>
+        </div>
+    </div>
+</div>
+
         </div>
         <div class="px-6 py-4">
             @if(isset($servicesData) && count($servicesData) > 0)
@@ -293,13 +317,20 @@
                                     }
                                 }
                  @endphp
-                <div class="px-6 pb-2 py-2">
-                    <div class="text-sm text-gray-700">
-                        <p>
-                        Summary: <strong>{{ $serviceReasonCount ?? 0 }}</strong> 
-                        services reported reasons — Unique Reasons: <strong>{{ $uniqueReasons ?? 0 }}</strong> — 
-                        Total Reasoned Reservations: <strong>{{ $totalReasonEntries ?? 0 }}</strong>
-                        </p>        
+                <div class="px-6 py-3 bg-gray-50 border-t border-gray-200 mt-3">
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Services Reported Reasons</p>
+                            <p class="text-2xl font-bold text-gray-900 mt-1">{{ $serviceReasonCount ?? 0 }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-amber-600 uppercase tracking-wide font-semibold">Unique Reasons</p>
+                            <p class="text-2xl font-bold text-amber-600 mt-1">{{ $uniqueReasons ?? 0 }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-green-600 uppercase tracking-wide font-semibold">Total Reasoned Reservations</p>
+                            <p class="text-2xl font-bold text-green-600 mt-1">{{ $totalReasonEntries ?? 0 }}</p>
+                        </div>
                     </div>
                 </div>
         </div>
@@ -445,15 +476,27 @@
                     }
                 }
             @endphp
-            <div class="px-6 pb-4">
-                <div class="text-sm text-gray-700">
-                    <p>
-                        Summary: Top Hour: <strong>{{ $topHour ?? '—' }}</strong> 
-                        ({{ $topHourCount ?? 0 }} reservations) — Top Day: <strong>{{ $topDay ?? '—' }}</strong> 
-                        — Total Reservations (hourly aggregation): <strong>{{ $totalPeakReservations ?? 0 }}</strong>
-                    </p>
-                </div>
-            </div>
+            <div class="px-6 py-3 bg-gray-50 border-t border-gray-200">
+    <div class="grid grid-cols-4 gap-4">
+        <div>
+            <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Top Hour</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ $topHour ?? '—' }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Peak Reservations</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ $topHourCount ?? 0 }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Top Day</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ $topDay ?? '—' }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Total Reservations</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ $totalPeakReservations ?? 0 }}</p>
+        </div>
+    </div>
+</div>
+
         </div>
         <div class="px-6 py-4">
             @if(isset($peakData))
@@ -628,15 +671,27 @@
                     $demographics = $engagementData['demographic_engagement'] ?? [];
                     $topUsers = $engagementData['service_preferences'] ?? collect();
                 @endphp
-             <div class="px-6 pb-4">
-                <div class="text-sm text-gray-700">
-                    <p>
-                          Summary: Total Approved Users <strong>{{ number_format($overview['total_users'] ?? 0) }}</strong> - 
-                            Total Active Users <strong>{{ number_format($overview['active_users'] ?? 0) }}</strong> -
-                            Engagement Rate <strong>{{ round($overview['engagement_rate'] ?? 0, 2) }}%</strong>
-                    </p>
+             <div class="px-6 py-3 bg-gray-50 border-t border-gray-200 mt-3">
+                <div class="grid grid-cols-5 gap-4">
+                    <div>
+                        <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Total Users</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ number_format($overview['total_users'] ?? 0) }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Active Users</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ number_format($overview['active_users'] ?? 0) }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Engagement Rate</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ round($overview['engagement_rate'] ?? 0, 1) }}%</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-600 uppercase tracking-wide font-semibold">Total Reservations</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ number_format($overview['total_reservations'] ?? 0) }}</p>
+                    </div>
                 </div>
             </div>
+
         </div>
 
         <div class="px-6 py-4">

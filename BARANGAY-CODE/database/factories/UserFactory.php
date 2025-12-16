@@ -33,8 +33,8 @@ class UserFactory extends Factory
             'birth_date' => fake()->date('Y-m-d', '-8 years'),
             'sex' => $sex,
             'is_pwd' => fake()->boolean(10), // 10% chance of being PWD
-            'email' => fake()->unique()->safeEmail(),
-            'password' => static::$password ??= Hash::make('password123'),
+            'email' => fake()->unique()->userName() . '@gmail.com',
+            'password' => static::$password ??= Hash::make('123123123'),
             'is_admin' => 0,
             'account_status' => 'pending',
 
