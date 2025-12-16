@@ -59,9 +59,9 @@ class UserAccountController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'first_name' => 'required|string|max:255|regex:/^[a-zA-Z\s\-\'\.]+$/',
-            'last_name' => 'required|string|max:255|regex:/^[a-zA-Z\s\-\'\.]+$/',
-            'email' => 'required|email|unique:users,email',
+            'first_name' => 'required|string|max:50|regex:/^[a-zA-Z\s\-\'\.]+$/',
+            'last_name' => 'required|string|max:50|regex:/^[a-zA-Z\s\-\'\.]+$/',
+            'email' => 'required|email|max:100|unique:users,email',
             'password' => 'required|min:8|confirmed',
             'id_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ], [
@@ -168,9 +168,9 @@ class UserAccountController extends Controller
     public function update(Request $request, User $user)
     {
         $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
+            'first_name' => 'required|string|max:50',
+            'last_name' => 'required|string|max:50',
+            'email' => 'required|email|max:100|unique:users,email,' . $user->id,
         ]);
 
         $user->update([
@@ -373,8 +373,8 @@ class UserAccountController extends Controller
 
         // Validate resubmitted data
         $request->validate([
-            'first_name' => 'required|string|max:255|regex:/^[a-zA-Z\s\-\'\.]+$/',
-            'last_name' => 'required|string|max:255|regex:/^[a-zA-Z\s\-\'\.]+$/',
+            'first_name' => 'required|string|max:50|regex:/^[a-zA-Z\s\-\'\.]+$/',
+            'last_name' => 'required|string|max:50|regex:/^[a-zA-Z\s\-\'\.]+$/',
             'birth_month' => 'required|numeric|between:1,12',
             'birth_day' => 'required|numeric|between:1,31',
             'birth_year' => 'required|numeric|min:1900|max:' . date('Y'),

@@ -29,84 +29,87 @@
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body id="adminBody" class="bg-gray-100">
 
     <!-- Sidebar -->
     <div id="adminSidebar" class="w-full md:w-64 bg-yellow-500 text-white h-screen flex flex-col fixed inset-y-0 left-0 z-40 transform md:transform-none transition-transform duration-200 -translate-x-full md:translate-x-0 overflow-y-auto">
-        <div class="p-6 flex flex-col items-center border-b border-yellow-600">
+        <div class="p-6 flex flex-col items-center border-b border-yellow-600 logo-wrapper">
             <!-- Logo Circle -->
             <div class="flex justify-center mb-2 -mt-2">
-                <div class="w-24 h-24 rounded-full overflow-hidden shadow-xl">
+                <div class="w-24 h-24 rounded-full overflow-hidden shadow-xl logo-circle">
                     <img src="{{ asset('LOGO.png') }}" 
                          alt="Barangay Logo" 
                          class="w-full h-full object-cover scale-125">
                 </div>
             </div>
             <!-- Logo Name -->
-            <span class="text-2xl font-bold text-center">BARANGAY 22-C</span>
+            <span class="text-2xl font-bold text-center logo-text">BARANGAY 22-C</span>
         </div>
 
         <nav class="flex-1 mt-4">
             <a href="{{ route('dashboard') }}" 
-               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-600 {{ request()->routeIs('dashboard') ? 'bg-yellow-600' : '' }}">
+               class="flex items-center py-3 px-6 nav-link transition duration-200 hover:bg-yellow-600 {{ request()->routeIs('dashboard') ? 'bg-yellow-600' : '' }}">
                 <i class="fas fa-tachometer-alt w-6 mr-3"></i>
-                Dashboard
+                <span class="nav-label">Dashboard</span>
             </a>
             
             <a href="{{ route('reservation.dashboard') }}" 
-               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-600 {{ request()->routeIs('reservation.dashboard') ? 'bg-yellow-600' : '' }}">
+               class="flex items-center py-3 px-6 nav-link transition duration-200 hover:bg-yellow-600 {{ request()->routeIs('reservation.dashboard') ? 'bg-yellow-600' : '' }}">
                 <i class="fas fa-calendar-check w-6 mr-3"></i>
-                Reservation
+                <span class="nav-label">Reservation</span>
             </a>
             
             <a href="{{ route('admin.services.index') }}" 
-               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-600 {{ request()->routeIs('admin.services.index') ? 'bg-yellow-600' : '' }}">
+               class="flex items-center py-3 px-6 nav-link transition duration-200 hover:bg-yellow-600 {{ request()->routeIs('admin.services.index') ? 'bg-yellow-600' : '' }}">
                 <i class="fas fa-toolbox w-6 mr-3"></i>
-                Services
+                <span class="nav-label">Services</span>
             </a>
 
             <a href="{{ route('admin.closure_periods.index') }}" 
-               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-600 {{ request()->routeIs('admin.closure_periods.index') ? 'bg-yellow-600' : '' }}">
+               class="flex items-center py-3 px-6 nav-link transition duration-200 hover:bg-yellow-600 {{ request()->routeIs('admin.closure_periods.index') ? 'bg-yellow-600' : '' }}">
                 <i class="fas fa-door-closed w-6 mr-3"></i>
-                Closure Periods
+                <span class="nav-label">Closure Periods</span>
             </a>
 
             <a href="{{ route('admin.user_accounts.index') }}" 
-               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-600 {{ request()->routeIs('admin.user_accounts.*') ? 'bg-yellow-600' : '' }}">
+               class="flex items-center py-3 px-6 nav-link transition duration-200 hover:bg-yellow-600 {{ request()->routeIs('admin.user_accounts.*') ? 'bg-yellow-600' : '' }}">
                 <i class="fas fa-users w-6 mr-3"></i>
-                User Accounts
+                <span class="nav-label">User Accounts</span>
             </a>
 
             <a href="{{ route('admin.reports.index') }}" 
-               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-600 {{ request()->routeIs('admin.reports.*') ? 'bg-yellow-600' : '' }}">
+               class="flex items-center py-3 px-6 nav-link transition duration-200 hover:bg-yellow-600 {{ request()->routeIs('admin.reports.*') ? 'bg-yellow-600' : '' }}">
                 <i class="fas fa-chart-bar w-6 mr-3"></i>
-                Reports
+                <span class="nav-label">Reports</span>
             </a>
 
             <a href="{{ route('admin.archives', ['tab' => 'services']) }}" 
-               class="flex items-center py-3 px-6 transition duration-200 hover:bg-yellow-600 {{ request()->routeIs('admin.archives') ? 'bg-yellow-600' : '' }}">
+               class="flex items-center py-3 px-6 nav-link transition duration-200 hover:bg-yellow-600 {{ request()->routeIs('admin.archives') ? 'bg-yellow-600' : '' }}">
                 <i class="fas fa-archive w-6 mr-3"></i>
-                Archives
+                <span class="nav-label">Archives</span>
             </a>
         </nav>
         
         <div class="mt-auto p-4 border-t border-yellow-600">
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <button type="submit" class="flex items-center w-full py-3 px-6 hover:bg-yellow-600 transition duration-200 rounded">
+                <button type="submit" class="flex items-center w-full py-3 px-6 nav-link hover:bg-yellow-600 transition duration-200 rounded">
                     <i class="fas fa-sign-out-alt w-6 mr-3"></i>
-                    Log Out
+                    <span class="logout-label">Log Out</span>
                 </button>
             </form>
         </div>
     </div>
 
     <!-- Main content -->
-    <div class="md:ml-64 p-4 md:p-8 min-h-screen">
+    <div id="adminMain" class="md:ml-64 p-4 md:p-8 min-h-screen">
         <!-- Header -->
         <div class="flex items-center justify-between mb-4 md:mb-8">
             <div class="flex items-center gap-3">
-                <button id="btnAdminMenu" class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded bg-yellow-500 text-white"><i class="fas fa-bars"></i></button>
+                <!-- Mobile Menu Button Only -->
+                <button id="btnAdminMenu" class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded bg-yellow-500 text-white">
+                    <i class="fas fa-bars"></i>
+                </button>
                 <h1 class="text-2xl md:text-3xl font-bold text-gray-800">@yield('title', 'Dashboard')</h1>
             </div>
             <div class="flex items-center space-x-3 md:space-x-4">
@@ -187,6 +190,8 @@
 document.addEventListener('DOMContentLoaded', function(){
   const sidebar = document.getElementById('adminSidebar');
   const btn = document.getElementById('btnAdminMenu');
+
+  // Mobile menu toggle
   btn?.addEventListener('click', () => {
     const hidden = sidebar.classList.contains('-translate-x-full');
     sidebar.classList.toggle('-translate-x-full', !hidden);

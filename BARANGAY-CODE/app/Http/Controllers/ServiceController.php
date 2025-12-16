@@ -124,8 +124,33 @@ class ServiceController extends Controller
 
     public function destroy(Service $service)
     {
+        // Cancel all future reservations for this service before archiving
+        $cancelledCount = Reservation::where('service_id', $service->id)
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->where('reservation_date', '>=', Carbon::today())
+            ->count();
+
+        if ($cancelledCount > 0) {
+            Reservation::where('service_id', $service->id)
+                ->whereIn('status', ['pending', 'confirmed'])
+                ->where('reservation_date', '>=', Carbon::today())
+                ->each(function ($reservation) {
+                    $reservation->cancelWithReason(
+                        'Service has been archived.',
+                        false, // No suspension for system-initiated cancellations
+                        auth()->id() // Record the admin who archived the service
+                    );
+                });
+        }
+
         $service->delete();
-        return redirect()->back()->with('status', 'Service archived');
+        
+        $message = 'Service archived';
+        if ($cancelledCount > 0) {
+            $message .= " - $cancelledCount future reservation(s) cancelled";
+        }
+        
+        return redirect()->back()->with('status', $message);
     }
 
     public function archiveUnits(Request $request, Service $service)

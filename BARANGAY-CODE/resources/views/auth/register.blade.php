@@ -42,7 +42,7 @@
                         <input type="text" name="first_name" id="first_name" 
                             class="w-full h-10 border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent" 
                             placeholder="First Name"
-                            value="{{ old('first_name') }}" required>
+                            value="{{ old('first_name') }}" maxlength="50" required>
                         @error('first_name')
                             <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
                         @enderror
@@ -53,7 +53,7 @@
                         <input type="text" name="last_name" id="last_name" 
                             class="w-full h-10 border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent" 
                             placeholder="Last Name"
-                            value="{{ old('last_name') }}" required>
+                            value="{{ old('last_name') }}" maxlength="50" required>
                         @error('last_name')
                             <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
                         @enderror
@@ -135,7 +135,7 @@
                     <input type="email" name="email" id="email" 
                         class="w-full h-10 border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent" 
                         placeholder="Email"
-                        value="{{ old('email') }}" required>
+                        value="{{ old('email') }}" maxlength="100" required>
                     <div id="emailStatusMessage" class="mt-1 text-xs font-medium hidden px-1"></div>
                     @error('email')
                         <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>

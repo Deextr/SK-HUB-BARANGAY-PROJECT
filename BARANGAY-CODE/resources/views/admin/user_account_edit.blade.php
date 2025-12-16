@@ -35,6 +35,7 @@
                     <label for="first_name" class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                     <input type="text" name="first_name" id="first_name" 
                            value="{{ old('first_name', $user->first_name) }}"
+                           maxlength="50"
                            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
                 </div>
                 
@@ -42,6 +43,7 @@
                     <label for="last_name" class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
                     <input type="text" name="last_name" id="last_name" 
                            value="{{ old('last_name', $user->last_name) }}"
+                           maxlength="50"
                            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
                 </div>
                 
@@ -55,6 +57,7 @@
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
                     <input type="email" name="email" id="email" 
                            value="{{ old('email', $user->email) }}"
+                           maxlength="100"
                            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500" required>
                 </div>
             </div>

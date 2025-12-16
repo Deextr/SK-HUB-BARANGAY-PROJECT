@@ -55,7 +55,7 @@
                         <input type="text" name="first_name" id="first_name" 
                             class="w-full h-10 border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent" 
                             placeholder="First Name"
-                            value="{{ Auth::user()->first_name }}" required>
+                            value="{{ Auth::user()->first_name }}" maxlength="50" required>
                         @error('first_name')
                             <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
                         @enderror
@@ -66,7 +66,7 @@
                         <input type="text" name="last_name" id="last_name" 
                             class="w-full h-10 border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent" 
                             placeholder="Last Name"
-                            value="{{ Auth::user()->last_name }}" required>
+                            value="{{ Auth::user()->last_name }}" maxlength="50" required>
                         @error('last_name')
                             <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
                         @enderror

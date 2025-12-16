@@ -45,6 +45,7 @@
                     id="first_name" 
                     name="first_name" 
                     value="{{ Auth::user()->first_name }}"
+                    maxlength="50"
                     required
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                 />
@@ -61,6 +62,7 @@
                     id="last_name" 
                     name="last_name" 
                     value="{{ Auth::user()->last_name }}"
+                    maxlength="50"
                     required
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                 />
