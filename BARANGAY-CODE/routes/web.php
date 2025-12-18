@@ -173,6 +173,11 @@ Route::middleware('auth')->group(function () {
         // Settings
         Route::get('/settings', [ResidentSettingsController::class, 'index'])->name('resident.settings.index');
         Route::post('/settings/update-password', [ResidentSettingsController::class, 'updatePassword'])->name('resident.settings.update-password');
+        Route::post('/settings/update-profile-picture', [ResidentSettingsController::class, 'updateProfilePicture'])
+    ->name('resident.settings.update-profile-picture');
+
+Route::post('/settings/remove-profile-picture', [ResidentSettingsController::class, 'removeProfilePicture'])
+    ->name('resident.settings.remove-profile-picture');
     });
 
     // Default redirect after login based on role

@@ -79,8 +79,14 @@
             </div>
             <div class="flex items-center space-x-3 md:space-x-4">
                 <span class="text-gray-600 hidden sm:inline">{{ Auth::user()->first_name ?? 'Resident' }}</span>
-                <div class="w-9 h-9 md:w-10 md:h-10 bg-yellow-500 rounded-full flex items-center justify-center">
+                <div class="w-9 h-9 md:w-10 md:h-10 bg-yellow-500 rounded-full flex items-center justify-center overflow-hidden">
+                    @if(Auth::user()->profile_picture)
+                    <img src="{{ asset('storage/' . Auth::user()->profile_picture) }}" 
+                         alt="Profile" 
+                         class="w-full h-full object-cover">
+                    @else
                     <span class="text-white font-bold">{{ strtoupper(substr(Auth::user()->first_name ?? 'R', 0, 1)) }}</span>
+                    @endif
                 </div>
             </div>
         </div>

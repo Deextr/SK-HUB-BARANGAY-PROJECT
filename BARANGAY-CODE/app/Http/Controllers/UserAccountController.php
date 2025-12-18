@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\RegistrationStatus;
 
 class UserAccountController extends Controller
 {
@@ -195,6 +197,9 @@ class UserAccountController extends Controller
             'rejected_at' => null,
         ]);
 
+        // Send approval email
+        Mail::to($user->email)->send(new RegistrationStatus($user, 'approved'));
+
         return redirect()->route('admin.user_accounts.index')
             ->with('success', 'User account approved successfully.');
     }
@@ -217,6 +222,9 @@ class UserAccountController extends Controller
             'rejection_reason' => null,
         ]);
 
+        // Send partial rejection email
+        Mail::to($user->email)->send(new RegistrationStatus($user, 'partially_rejected', $request->rejection_reason));
+
         return redirect()->route('admin.user_accounts.index')
             ->with('success', 'User account marked for corrections. Resident can now resubmit.');
     }
@@ -238,6 +246,9 @@ class UserAccountController extends Controller
             'partially_rejected_at' => null,
             'partially_rejected_reason' => null,
         ]);
+
+        // Send total rejection email
+        Mail::to($user->email)->send(new RegistrationStatus($user, 'rejected', $request->rejection_reason));
 
         return redirect()->route('admin.user_accounts.index')
             ->with('success', 'User account rejected. Resident cannot login.');

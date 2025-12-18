@@ -43,86 +43,185 @@
     @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Change Password Section (Left) -->
-        <div class="bg-white rounded-lg shadow p-6 h-fit">
-            <h2 class="text-xl font-semibold text-gray-800 mb-2 flex items-center">
-                <i class="fas fa-lock text-yellow-500 mr-3"></i>
-                Change Password
-            </h2>
-            <p class="text-sm text-gray-600 mb-6">Update your password to keep your account secure.</p>
+        <!-- Left Column -->
+        <div class="space-y-6">
+            <!-- Profile Picture Section -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-2 flex items-center">
+                    <i class="fas fa-user-circle text-yellow-500 mr-3"></i>
+                    Profile Picture
+                </h2>
+                <p class="text-sm text-gray-600 mb-6">Upload or update your profile picture.</p>
 
-            <form id="passwordForm" action="{{ route('resident.settings.update-password') }}" method="POST" class="space-y-4">
-                @csrf
-
-                <!-- Current Password -->
-                <div>
-                    <label for="current_password" class="block text-sm font-medium text-gray-700 mb-2">
-                        Current Password
-                    </label>
-                    <input type="password" 
-                           id="current_password" 
-                           name="current_password" 
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent @error('current_password') border-red-500 @enderror"
-                           placeholder="Enter your current password"
-                           required>
-                    @error('current_password')
-                    <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                    @enderror
+                <!-- Current Profile Picture with Preview -->
+                <div class="flex flex-col items-center mb-6">
+                    <div class="relative">
+                        @if($user->profile_picture)
+                        <div class="w-40 h-40 rounded-full overflow-hidden border-4 border-yellow-300 shadow-lg mb-3 cursor-pointer hover:shadow-xl hover:border-yellow-400 transition-all duration-200" 
+                            onclick="openImageModal('{{ asset('storage/' . $user->profile_picture) }}')">
+                            <img src="{{ asset('storage/' . $user->profile_picture) }}" 
+                                alt="Profile Picture" 
+                                class="w-full h-full object-cover hover:scale-105 transition-transform duration-200" 
+                                id="profilePreview">
+                        </div>
+                        @else
+                        <div class="w-40 h-40 rounded-full bg-yellow-100 border-4 border-yellow-300 flex items-center justify-center shadow-lg mb-3 cursor-not-allowed">
+                            <i class="fas fa-user text-yellow-400 text-6xl"></i>
+                        </div>
+                        @endif
+                        
+                        <!-- Upload Status Indicator -->
+                        <div id="uploadStatus" class="hidden absolute -top-2 -right-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg">
+                            <i class="fas fa-check text-sm"></i>
+                        </div>
+                    </div>
+                    
+                    <p class="text-xs text-gray-500 text-center">
+                        {{ $user->profile_picture ? 'Click the image to preview in full size' : 'No profile picture uploaded yet' }}
+                    </p>
                 </div>
 
-                <!-- New Password -->
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-                        New Password
-                    </label>
-                    <input type="password" 
-                           id="password" 
-                           name="password" 
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent @error('password') border-red-500 @enderror"
-                           placeholder="Enter your new password"
-                           required>
-                    @error('password')
-                    <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                    @enderror
+                <!-- Upload Form -->
+                <form id="profilePictureForm" action="{{ route('resident.settings.update-profile-picture') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                    @csrf
+                    
+                    <!-- File Input -->
+                    <div>
+                        <label for="profile_picture" class="block text-sm font-medium text-gray-700 mb-2">
+                            Upload New Picture
+                        </label>
+                        <div class="relative">
+                            <input type="file" 
+                                id="profile_picture" 
+                                name="profile_picture" 
+                                accept="image/*"
+                                class="hidden"
+                                onchange="previewImage(event)">
+                            <div class="flex items-center space-x-3">
+                                <button type="button" 
+                                        onclick="document.getElementById('profile_picture').click()"
+                                        class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2">
+                                    <i class="fas fa-upload"></i>
+                                    Choose File
+                                </button>
+                                @if($user->profile_picture)
+                                <button type="button" 
+                                        onclick="removeProfilePicture()"
+                                        class="flex-1 bg-red-100 hover:bg-red-200 text-red-700 font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2">
+                                    <i class="fas fa-trash"></i>
+                                    Remove
+                                </button>
+                                @endif
+                            </div>
+                        </div>
+                        
+                        <!-- File Name Display -->
+                        <div id="fileName" class="mt-2 text-sm text-gray-600 hidden"></div>
+                        
+                        <!-- Validation Rules -->
+                        <p class="text-xs text-gray-500 mt-2">
+                            • Maximum file size: 5MB<br>
+                            • Supported formats: JPG, PNG, GIF<br>
+                            • Recommended size: 400x400 pixels
+                        </p>
+                        
+                        @error('profile_picture')
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" 
+                            id="uploadButton"
+                            class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled>
+                        <i class="fas fa-save"></i>
+                        Update Profile Picture
+                    </button>
+                </form>
+            </div>
+
+            <!-- Change Password Section -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-2 flex items-center">
+                    <i class="fas fa-lock text-yellow-500 mr-3"></i>
+                    Change Password
+                </h2>
+                <p class="text-sm text-gray-600 mb-6">Update your password to keep your account secure.</p>
+
+                <form id="passwordForm" action="{{ route('resident.settings.update-password') }}" method="POST" class="space-y-4">
+                    @csrf
+
+                    <!-- Current Password -->
+                    <div>
+                        <label for="current_password" class="block text-sm font-medium text-gray-700 mb-2">
+                            Current Password
+                        </label>
+                        <input type="password" 
+                               id="current_password" 
+                               name="current_password" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent @error('current_password') border-red-500 @enderror"
+                               placeholder="Enter your current password"
+                               required>
+                        @error('current_password')
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- New Password -->
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                            New Password
+                        </label>
+                        <input type="password" 
+                               id="password" 
+                               name="password" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent @error('password') border-red-500 @enderror"
+                               placeholder="Enter your new password"
+                               required>
+                        @error('password')
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div>
+                        <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-2">
+                            Confirm Password
+                        </label>
+                        <input type="password" 
+                               id="password_confirmation" 
+                               name="password_confirmation" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent @error('password_confirmation') border-red-500 @enderror"
+                               placeholder="Confirm your new password"
+                               required>
+                        @error('password_confirmation')
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="button" 
+                            onclick="openPasswordConfirmModal()"
+                            class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 mt-6">
+                        <i class="fas fa-save"></i>
+                        Update Password
+                    </button>
+                </form>
+
+                <!-- Password Tips -->
+                <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 class="text-sm font-semibold text-blue-900 mb-2 flex items-center">
+                        <i class="fas fa-lightbulb text-blue-500 mr-2"></i>
+                        Security Tips
+                    </h4>
+                    <ul class="text-xs text-blue-800 space-y-1">
+                        <li>• Use a unique password you don't use elsewhere</li>
+                        <li>• Avoid using personal information</li>
+                        <li>• Never share your password with anyone</li>
+                        <li>• Change your password regularly</li>
+                    </ul>
                 </div>
-
-                <!-- Confirm Password -->
-                <div>
-                    <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-2">
-                        Confirm Password
-                    </label>
-                    <input type="password" 
-                           id="password_confirmation" 
-                           name="password_confirmation" 
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent @error('password_confirmation') border-red-500 @enderror"
-                           placeholder="Confirm your new password"
-                           required>
-                    @error('password_confirmation')
-                    <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Submit Button -->
-                <button type="button" 
-                        onclick="openPasswordConfirmModal()"
-                        class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 mt-6">
-                    <i class="fas fa-save"></i>
-                    Update Password
-                </button>
-            </form>
-
-            <!-- Password Tips -->
-            <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 class="text-sm font-semibold text-blue-900 mb-2 flex items-center">
-                    <i class="fas fa-lightbulb text-blue-500 mr-2"></i>
-                    Security Tips
-                </h4>
-                <ul class="text-xs text-blue-800 space-y-1">
-                    <li>• Use a unique password you don't use elsewhere</li>
-                    <li>• Avoid using personal information</li>
-                    <li>• Never share your password with anyone</li>
-                    <li>• Change your password regularly</li>
-                </ul>
             </div>
         </div>
 
@@ -130,21 +229,21 @@
         <div class="bg-white rounded-lg shadow p-6 space-y-6">
             <div>
                 <h2 class="text-xl font-semibold text-gray-800 mb-2 flex items-center">
-                    <i class="fas fa-user-circle text-yellow-500 mr-3"></i>
+                    <i class="fas fa-id-card text-yellow-500 mr-3"></i>
                     Account Information
                 </h2>
                 <p class="text-xs text-gray-500">Your account details are displayed below.</p>
             </div>
 
-            <!-- Profile Picture - Larger & Clickable -->
+            <!-- ID Photo -->
             <div class="border-b pb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-4">Profile Picture</label>
+                <label class="block text-sm font-medium text-gray-700 mb-4">ID Photo</label>
                 <div class="flex flex-col items-center text-center">
                     @if($user->id_image_path)
                     <div class="w-40 h-40 rounded-lg overflow-hidden border-3 border-yellow-300 bg-gray-100 shadow-md mb-3 cursor-pointer hover:shadow-lg hover:border-yellow-400 transition-all duration-200" 
                          onclick="openImageModal('{{ asset('storage/' . $user->id_image_path) }}')">
                         <img src="{{ asset('storage/' . $user->id_image_path) }}" 
-                             alt="Profile Picture" 
+                             alt="ID Photo" 
                              class="w-full h-full object-cover hover:scale-105 transition-transform duration-200">
                     </div>
                     @else
@@ -300,6 +399,16 @@
         cursor: not-allowed;
     }
 
+    /* Animation for upload status */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.8); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    .animate-in {
+        animation: fadeIn 0.2s ease-out;
+    }
+
 </style>
 
 <script>
@@ -384,7 +493,180 @@
         }
     });
 
-    // Close modal on Escape key
+    // Profile Picture Functions
+    function previewImage(event) {
+        const input = event.target;
+        const fileNameDiv = document.getElementById('fileName');
+        const uploadButton = document.getElementById('uploadButton');
+        const uploadStatus = document.getElementById('uploadStatus');
+        
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const reader = new FileReader();
+            
+            // Validate file size (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size exceeds 5MB limit. Please choose a smaller file.');
+                input.value = '';
+                return;
+            }
+            
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                alert('Please upload a valid image file (JPG, PNG, GIF).');
+                input.value = '';
+                return;
+            }
+            
+            reader.onload = function(e) {
+                // Update preview
+                const preview = document.getElementById('profilePreview');
+                if (preview) {
+                    preview.src = e.target.result;
+                } else {
+                    // Create new preview if it doesn't exist
+                    const previewContainer = document.querySelector('.relative .w-40');
+                    const img = document.createElement('img');
+                    img.id = 'profilePreview';
+                    img.src = e.target.result;
+                    img.className = 'w-full h-full object-cover rounded-full';
+                    previewContainer.innerHTML = '';
+                    previewContainer.appendChild(img);
+                    
+                    // Remove placeholder icon
+                    const placeholder = document.querySelector('.fa-user');
+                    if (placeholder) {
+                        placeholder.parentElement.remove();
+                    }
+                }
+                
+                // Show file name
+                fileNameDiv.textContent = `Selected file: ${file.name}`;
+                fileNameDiv.classList.remove('hidden');
+                
+                // Enable upload button
+                uploadButton.disabled = false;
+                
+                // Show upload status indicator
+                uploadStatus.classList.remove('hidden');
+                uploadStatus.style.animation = 'fadeIn 0.3s ease-out';
+            };
+            
+            reader.readAsDataURL(file);
+        }
+    }
+
+   function removeProfilePicture() {
+    const user = @json(auth()->user());
+    
+    if (!user.profile_picture) {
+        // Show error message with better styling and animation
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-md animate-in mb-4';
+        errorDiv.role = 'alert';
+        errorDiv.innerHTML = `
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-red-800">Cannot Remove Profile Picture</h3>
+                    <div class="mt-1 text-sm text-red-700">
+                        You don't have a profile picture to remove. Please upload a profile picture first.
+                    </div>
+                </div>
+                <div class="ml-auto pl-3">
+                    <div class="-mx-1.5 -my-1.5">
+                        <button type="button" onclick="this.closest('.animate-in').remove()" 
+                                class="inline-flex rounded-md p-1.5 text-red-500 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                            <span class="sr-only">Dismiss</span>
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Remove any existing alerts
+        const existingAlert = document.querySelector('.animate-in');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        // Add the new alert at the top of the profile picture section
+        const profileSection = document.querySelector('.bg-white.rounded-lg.shadow.p-6');
+        profileSection.insertBefore(errorDiv, profileSection.firstChild);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (errorDiv.parentNode) {
+                errorDiv.remove();
+            }
+        }, 5000);
+        
+        return;
+    }
+    if (confirm('Are you sure you want to remove your profile picture?')) {
+        // Show loading state
+        const removeButton = document.querySelector('button[onclick="removeProfilePicture()"]');
+        const originalText = removeButton.innerHTML;
+        removeButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Removing...';
+        removeButton.disabled = true;
+        // Send AJAX request to remove profile picture
+        fetch('{{ route("resident.settings.remove-profile-picture") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reload the page to show default avatar
+                window.location.reload();
+            } else {
+                throw new Error(data.message || 'Failed to remove profile picture');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Show error message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4 alert-message';
+            errorDiv.role = 'alert';
+            errorDiv.innerHTML = `
+                <strong class="font-bold">Error!</strong>
+                <span class="block sm:inline">${error.message || 'An error occurred. Please try again.'}</span>
+                <span class="absolute top-0 bottom-0 right-0 px-4 py-3" onclick="this.parentElement.remove()">
+                    <svg class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <title>Close</title>
+                        <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
+                    </svg>
+                </span>
+            `;
+            
+            // Remove any existing alerts
+            const existingAlert = document.querySelector('.alert-message');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+            
+            // Add the new alert
+            const form = document.getElementById('profilePictureForm');
+            form.parentNode.insertBefore(errorDiv, form.nextSibling);
+        })
+        .finally(() => {
+            // Reset button state
+            removeButton.innerHTML = originalText;
+            removeButton.disabled = false;
+        });
+    }
+}
+
+    // Close modal on Escape key for password modal
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
             const modal = document.getElementById('passwordConfirmModal');
@@ -393,5 +675,63 @@
             }
         }
     });
+
+    // Form submission handler
+   document.getElementById('profilePictureForm').addEventListener('submit', function(e) {
+    const fileInput = document.getElementById('profile_picture');
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'text-red-600 text-sm mt-2';
+    
+    // Remove any existing error messages
+    const existingError = document.querySelector('.profile-picture-error');
+    if (existingError) {
+        existingError.remove();
+    }
+
+    if (!fileInput.files.length) {
+        e.preventDefault();
+        errorDiv.textContent = 'Please select a file to upload.';
+        errorDiv.classList.add('profile-picture-error');
+        fileInput.parentNode.insertBefore(errorDiv, fileInput.nextSibling);
+        return;
+    }
+
+    // File size validation (5MB)
+    const file = fileInput.files[0];
+    if (file.size > 5 * 1024 * 1024) {
+        e.preventDefault();
+        errorDiv.textContent = 'File size exceeds 5MB limit. Please choose a smaller file.';
+        errorDiv.classList.add('profile-picture-error');
+        fileInput.parentNode.insertBefore(errorDiv, fileInput.nextSibling);
+        return;
+    }
+
+    // File type validation
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+        e.preventDefault();
+        errorDiv.textContent = 'Invalid file type. Please upload a JPG, PNG, or GIF image.';
+        errorDiv.classList.add('profile-picture-error');
+        fileInput.parentNode.insertBefore(errorDiv, fileInput.nextSibling);
+        return;
+    }
+
+    // Show loading state
+    const button = document.getElementById('uploadButton');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+    button.disabled = true;
+
+    // Revert button state if form submission fails
+    const form = this;
+    const originalSubmit = form.submit.bind(form);
+    
+    form.submit = function() {
+        // This will be called if validation passes
+        originalSubmit();
+    };
+
+    // If we get here, the form will submit normally
+});
 </script>
 @endsection

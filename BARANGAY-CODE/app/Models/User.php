@@ -42,6 +42,7 @@ class User extends Authenticatable
         'partially_rejected_at',
         'partially_rejected_reason',
         'resubmission_count',
+         'profile_picture',
     ];
 
     /**

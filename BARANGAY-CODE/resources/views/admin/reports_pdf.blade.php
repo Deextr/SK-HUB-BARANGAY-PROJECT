@@ -94,6 +94,11 @@
 </head>
 <body>
     <div class="header">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img src="{{ public_path('LOGO.png') }}" 
+                 alt="Barangay Logo" 
+                 style="width: 100px; height: auto; display: inline-block;">
+        </div>
         <h1>BARANGAY 22-C REPORTS</h1>
         <p>{{ $dateRangeText }}</p>
         <p>Report Type: {{ ucfirst($reportType) }} Report{{ $reportType == 'all' ? 's' : '' }}</p>
@@ -259,7 +264,7 @@
     </div>
     @endif
     @if($reportType === 'reservations' || $reportType === 'all')
-    <div class="section-report">
+    <div class="section">
         <div class="section-title">RESERVATIONS REPORT</div>
         
         @if(isset($reservationsData) && $reservationsData->count() > 0)
@@ -294,7 +299,7 @@
     @endif
 
     @if($reportType === 'services' || $reportType === 'all')
-    <div class="section-report">
+    <div class="section">
         <div class="section-title">SERVICES REPORT</div>
         
         @if(isset($servicesData) && count($servicesData) > 0)

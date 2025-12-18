@@ -647,6 +647,31 @@ document.addEventListener('DOMContentLoaded', function() {
         
         return isValid;
     }
+
+    // Cancellation Modal Logic
+    const cancelForm = document.getElementById('cancelReservationForm');
+    const reasonSelect = document.getElementById('cancellation_reason_select');
+    const othersContainer = document.getElementById('others_reason_container');
+    const othersTextarea = document.getElementById('cancellation_reason_others');
+    const hiddenReasonInput = document.getElementById('cancellation_reason');
+
+    reasonSelect.addEventListener('change', function() {
+        if (this.value === 'Others') {
+            othersContainer.classList.remove('hidden');
+            othersTextarea.required = true;
+        } else {
+            othersContainer.classList.add('hidden');
+            othersTextarea.required = false;
+        }
+    });
+
+    cancelForm.addEventListener('submit', function(e) {
+        let finalReason = reasonSelect.value;
+        if (finalReason === 'Others') {
+            finalReason = othersTextarea.value;
+        }
+        hiddenReasonInput.value = finalReason;
+    });
 });
 </script>
 
@@ -726,6 +751,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const cancelResident = document.getElementById('cancel_resident');
     const cancelDatetime = document.getElementById('cancel_datetime');
     const upcomingWarning = document.getElementById('upcomingWarning');
+    const reasonSelect = document.getElementById('cancellation_reason_select');
+    const othersContainer = document.getElementById('others_reason_container');
+    const othersTextarea = document.getElementById('cancellation_reason_others');
+    const hiddenReasonField = document.getElementById('cancellation_reason');
+    
+    // Handle dropdown change to show/hide "Others" textarea
+    reasonSelect.addEventListener('change', function() {
+        if (this.value === 'Others') {
+            othersContainer.classList.remove('hidden');
+            othersTextarea.required = true;
+        } else {
+            othersContainer.classList.add('hidden');
+            othersTextarea.required = false;
+            othersTextarea.value = '';
+        }
+    });
     
     // Cancel buttons
     document.querySelectorAll('.btn-cancel').forEach(btn => {
@@ -749,8 +790,8 @@ document.addEventListener('DOMContentLoaded', function() {
             cancelModal.classList.remove('hidden');
             cancelModal.classList.add('flex');
             
-            // Focus on the reason textarea
-            document.getElementById('cancellation_reason').focus();
+            // Focus on the reason select
+            reasonSelect.focus();
         });
     });
     
@@ -758,7 +799,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function hideCancelModal() {
         cancelModal.classList.add('hidden');
         cancelModal.classList.remove('flex');
-        document.getElementById('cancellation_reason').value = '';
+        reasonSelect.value = '';
+        othersContainer.classList.add('hidden');
+        othersTextarea.value = '';
+        hiddenReasonField.value = '';
         document.getElementById('apply_suspension').checked = false;
     }
     
@@ -770,21 +814,36 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Form validation and submission
     cancelForm.addEventListener('submit', function(e) {
-        const reason = document.getElementById('cancellation_reason').value.trim();
+        const selectedReason = reasonSelect.value;
+        
+        if (!selectedReason) {
+            e.preventDefault();
+            alert('Please select a reason for cancellation.');
+            reasonSelect.focus();
+            return false;
+        }
+        
+        // Set the final cancellation reason
+        if (selectedReason === 'Others') {
+            const othersReason = othersTextarea.value.trim();
+            if (!othersReason) {
+                e.preventDefault();
+                alert('Please specify the reason for cancellation.');
+                othersTextarea.focus();
+                return false;
+            }
+            hiddenReasonField.value = othersReason;
+        } else {
+            hiddenReasonField.value = selectedReason;
+        }
+        
         const applySuspension = document.getElementById('apply_suspension').checked;
         
         console.log('Cancel form submitted:', {
-            reason: reason,
+            reason: hiddenReasonField.value,
             applySuspension: applySuspension,
             formAction: cancelForm.action
         });
-        
-        if (!reason) {
-            e.preventDefault();
-            alert('Please provide a reason for cancellation.');
-            document.getElementById('cancellation_reason').focus();
-            return false;
-        }
         
         // Log before submission
         console.log('Form validation passed, allowing submission');

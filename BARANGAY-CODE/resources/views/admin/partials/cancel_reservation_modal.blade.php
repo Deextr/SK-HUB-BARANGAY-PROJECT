@@ -24,10 +24,71 @@
                 </div>
 
                 <!-- Cancellation Reason -->
-                <div>
-                    <label for="cancellation_reason" class="block text-sm font-medium text-gray-700 mb-1">Reason for Cancellation <span class="text-red-500">*</span></label>
-                    <textarea id="cancellation_reason" name="cancellation_reason" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="Please provide a reason for cancellation" required></textarea>
+                <div class="space-y-1">
+                    <label for="cancellation_reason_select" class="block text-xs font-semibold text-gray-600 mb-1.5">REASON FOR CANCELLATION <span class="text-red-500">*</span></label>
+                    <div class="relative">
+                        <select id="cancellation_reason_select" name="cancellation_reason_select" 
+                            class="appearance-none w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all bg-white pr-10 cursor-pointer" 
+                            required>
+                            <option value="" disabled selected>Select a reason...</option>
+                            <option value="Resident did not show up" class="text-gray-700 hover:bg-gray-50">
+                                <div class="flex items-center">
+                                    <i class="fas fa-user-slash text-gray-500 mr-2"></i>
+                                    <span>Resident did not show up</span>
+                                </div>
+                            </option>
+                            <option value="Facility maintenance required" class="text-gray-700 hover:bg-gray-50">
+                                <div class="flex items-center">
+                                    <i class="fas fa-tools text-gray-500 mr-2"></i>
+                                    <span>Facility maintenance required</span>
+                                </div>
+                            </option>
+                            <option value="Double booking conflict" class="text-gray-700 hover:bg-gray-50">
+                                <div class="flex items-center">
+                                    <i class="fas fa-calendar-times text-gray-500 mr-2"></i>
+                                    <span>Double booking conflict</span>
+                                </div>
+                            </option>
+                            <option value="Emergency closure" class="text-gray-700 hover:bg-gray-50">
+                                <div class="flex items-center">
+                                    <i class="fas fa-exclamation-triangle text-amber-500 mr-2"></i>
+                                    <span>Emergency closure</span>
+                                </div>
+                            </option>
+                            <option value="Policy violation" class="text-gray-700 hover:bg-gray-50">
+                                <div class="flex items-center">
+                                    <i class="fas fa-ban text-red-500 mr-2"></i>
+                                    <span>Policy violation</span>
+                                </div>
+                            </option>
+                            <option value="Weather conditions" class="text-gray-700 hover:bg-gray-50">
+                                <div class="flex items-center">
+                                    <i class="fas fa-cloud-rain text-blue-500 mr-2"></i>
+                                    <span>Weather conditions</span>
+                                </div>
+                            </option>
+                            <option value="Others" class="text-gray-700 hover:bg-gray-50">
+                                <div class="flex items-center">
+                                    <i class="fas fa-ellipsis-h text-gray-500 mr-2"></i>
+                                    <span>Others</span>
+                                </div>
+                            </option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <i class="fas fa-chevron-down text-gray-400"></i>
+                        </div>
+                    </div>
                 </div>
+
+                
+                <!-- Others Textarea (shown when "Others" is selected) -->
+                <div id="others_reason_container" class="hidden space-y-1">
+                    <label for="cancellation_reason_others" class="block text-xs font-semibold text-gray-600 mb-1.5">PLEASE SPECIFY <span class="text-red-500">*</span></label>
+                     <textarea id="cancellation_reason_others" name="cancellation_reason_others" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent" placeholder="Please provide a reason for cancellation"></textarea>
+                </div>
+
+                <!-- Hidden field to store the final cancellation reason -->
+                <input type="hidden" id="cancellation_reason" name="cancellation_reason">
 
                 <!-- Suspension Option -->
                 <div class="flex items-start">

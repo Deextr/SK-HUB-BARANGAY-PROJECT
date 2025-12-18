@@ -98,18 +98,23 @@ class ReportsController extends Controller
     /**
      * Get Reservations Report data - returns detailed reservation records
      */
-    private function getReservationsReport($startDate, $endDate, $paginate = true)
-    {
-        $query = Reservation::query()
-            ->with(['user', 'service'])
-            ->orderBy('created_at', 'desc');
+    private function getReservationsReport($startDate, $endDate, $paginate = true, $forPdf = false)
+{
+    $query = Reservation::query()
+        ->with(['user', 'service'])
+        ->orderBy('created_at', 'desc');
 
-        if ($startDate && $endDate) {
-            $query->whereBetween('created_at', [$startDate, $endDate]);
-        }
-
-        return $paginate ? $query->paginate(15) : $query->get();
+    if ($startDate && $endDate) {
+        $query->whereBetween('created_at', [$startDate, $endDate]);
     }
+
+    if ($forPdf) {
+        // For PDFs, limit records to prevent memory issues
+        return $query->limit(500)->get(); // Adjust limit based on testing
+    }
+
+    return $paginate ? $query->paginate(15) : $query->get();
+}
     
     /**
      * Get Services Report data - returns service usage statistics
@@ -147,7 +152,7 @@ class ReportsController extends Controller
     // Use Laravel's paginator
     $currentPage = LengthAwarePaginator::resolveCurrentPage();
     $currentItems = $sortedServiceUsage->slice(($currentPage - 1) * $perPage, $perPage)->values();
-    
+
     return new LengthAwarePaginator(
         $currentItems,
         $sortedServiceUsage->count(),
@@ -1024,10 +1029,14 @@ class ReportsController extends Controller
         $engagementData = null;
 
         // Get data based on report type
-        if ($reportType === 'all' || $reportType === 'reservations') {
-            // For PDF export we want the full (non-paginated) dataset so the PDF contains all records.
-            $reservationsData = $this->getReservationsReport($calculatedStartDate, $calculatedEndDate, false);
-        }
+         if ($reportType === 'all' || $reportType === 'reservations') {
+        $reservationsData = $this->getReservationsReport(
+            $calculatedStartDate, 
+            $calculatedEndDate, 
+            false, // don't paginate
+            true    // for PDF - limit records
+        );
+    }
 
         if ($reportType === 'all' || $reportType === 'services') {
             $servicesData = $this->getServicesReport($calculatedStartDate, $calculatedEndDate);

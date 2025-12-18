@@ -4,7 +4,14 @@
 
 @section('content')
 <div id="ticket-print" class="bg-white p-6 rounded-lg shadow-md max-w-xl mx-auto">
-    <h2 class="text-2xl font-bold mb-4">Reservation Ticket</h2>
+    <!-- Logo at top center -->
+    <div style="text-align: center;">
+        <img src="{{  asset('LOGO.png') }}" 
+             alt="Barangay Logo" 
+             style="width: 100px; height: auto; display: inline-block;">
+    </div>
+    
+    <h2 class="text-2xl font-bold mb-4 text-center">Reservation Ticket</h2>
     <div class="border rounded p-4">
         <div class="mb-2"><span class="font-semibold">Reference:</span> {{ $reservation->reference_no }}</div>
         <div class="mb-2"><span class="font-semibold">Reservation ID:</span> {{ $reservation->id }}</div>
